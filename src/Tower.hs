@@ -1,5 +1,9 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module Tower where
 
+import Protolude (Bool(..), (.), (==), (/=), (&&), (||), asTypeOf, (>), (<), fst, snd, foldl, const, foldl', numerator, denominator, ($), error)
 import qualified Protolude as P
 
 class Semigroup g where
@@ -204,14 +208,14 @@ class (Monoid r, Rg r) => Rig r where
     one :: r
 
 -- | FIXME: this should be in the Rig class, but putting it there requires a lot of changes to Eq
-isOne :: (Rig g, ValidEq g) => g -> Logic g
+isOne :: (Rig g) => g -> P.Bool
 isOne = (==one)
 
 -- | FIXME: this should be in the Rig class, but putting it there requires a lot of changes to Eq
-notOne :: (Rig g, ValidEq g) => g -> Logic g
+notOne :: (Rig g) => g -> P.Bool
 notOne = (/=one)
 
-law_Rig_multiplicativeId :: (Eq r, Rig r) => r -> Bool
+law_Rig_multiplicativeId :: (Rig r) => r -> P.Bool
 law_Rig_multiplicativeId r = r * one == r && one * r == r
 
 instance Rig P.Int         where one = 1 ; {-# INLINE one #-}
@@ -248,7 +252,7 @@ class (Rng r, Rig r) => Ring r where
     fromInteger :: P.Integer -> r
     fromInteger = slowFromInteger
 
-defn_Ring_fromInteger :: (Eq r, Ring r) => r -> Integer -> Bool
+defn_Ring_fromInteger :: (Ring r) => r -> P.Integer-> P.Bool
 defn_Ring_fromInteger r i = fromInteger i `asTypeOf` r
                          == slowFromInteger i
 
@@ -273,11 +277,159 @@ instance Ring b => Ring (a -> b) where
     fromInteger i = \a -> fromInteger i
 
 {-# INLINABLE indicator #-}
-indicator :: Ring r => Bool -> r
+indicator :: Ring r => P.Bool -> r
 indicator True = 1
 indicator False = 0
 
+-- | 'Integral' numbers can be formed from a wide class of things that behave
+-- like integers, but intuitively look nothing like integers.
+--
+-- FIXME: All Fields are integral domains; should we make it a subclass?  This would have the (minor?) problem of making the Integral class have to be an approximate embedding.
+-- FIXME: Not all integral domains are homomorphic to the integers (e.g. a field)
+--
+-- See wikipedia on <https://en.wikipedia.org/wiki/Integral_element integral elements>,
+--  <https://en.wikipedia.org/wiki/Integral_domain integral domains>,
+-- and the <https://en.wikipedia.org/wiki/Ring_of_integers ring of integers>.
+class Ring a => Integral a where
+    toInteger :: a -> P.Integer
+    infixl 7  `quot`, `rem`
 
+    -- | truncates towards zero
+    {-# INLINE quot #-}
+    quot :: a -> a -> a
+    quot a1 a2 = fst (quotRem a1 a2)
+
+    {-# INLINE rem #-}
+    rem :: a -> a -> a
+    rem a1 a2 = snd (quotRem a1 a2)
+
+    quotRem :: a -> a -> (a,a)
+
+
+    infixl 7 `div`, `mod`
+
+    -- | truncates towards negative infinity
+    {-# INLINE div #-}
+    div :: a -> a -> a
+    div a1 a2 = fst (divMod a1 a2)
+
+    {-# INLINE mod #-}
+    mod :: a -> a -> a
+    mod a1 a2 = snd (divMod a1 a2)
+
+    divMod :: a -> a -> (a,a)
+
+
+law_Integral_divMod :: (Integral a) => a -> a -> P.Bool
+law_Integral_divMod a1 a2 = if a2 /= 0
+    then a2 * (a1 `div` a2) + (a1 `mod` a2) == a1
+    else True
+
+law_Integral_quotRem :: (Integral a) => a -> a -> P.Bool
+law_Integral_quotRem a1 a2 = if a2 /= 0
+    then a2 * (a1 `quot` a2) + (a1 `rem` a2) == a1
+    else True
+
+law_Integral_toFromInverse :: (Integral a) => a -> P.Bool
+law_Integral_toFromInverse a = fromInteger (toInteger a) == a
+
+{-# INLINE[1] fromIntegral #-}
+fromIntegral :: (Integral a, Ring b) => a -> b
+fromIntegral = fromInteger . toInteger
+
+-- | FIXME:
+-- This should be moved into the class hierarchy and generalized.
+--
+-- FIXME:
+-- There are more efficient implementations available if you restrict m to powers of 2.
+-- Is GHC smart enough to convert `rem` into bit shifts?
+-- See for more possibilities:
+-- http://stackoverflow.com/questions/3407012/c-rounding-up-to-the-nearest-multiple-of-a-number
+{-# INLINE roundUpToNearest #-}
+roundUpToNearest :: P.Int-> P.Int ->P.Int
+roundUpToNearest m x = x + m - 1 - (x - 1) `rem` m
+-- roundUpToNearest m x = if s==0
+--     then
+--     else x+r
+--     where
+--         s = x`rem`m
+--         r = if s==0 then 0 else m-s
+
+instance Integral P.Int where
+    {-# INLINE div #-}
+    {-# INLINE mod #-}
+    {-# INLINE divMod #-}
+    {-# INLINE quot #-}
+    {-# INLINE rem #-}
+    {-# INLINE quotRem #-}
+    {-# INLINE toInteger #-}
+    div = P.div
+    mod = P.mod
+    divMod = P.divMod
+    quot = P.quot
+    rem = P.rem
+    quotRem = P.quotRem
+    toInteger = P.toInteger
+
+instance Integral P.Integer where
+    {-# INLINE div #-}
+    {-# INLINE mod #-}
+    {-# INLINE divMod #-}
+    {-# INLINE quot #-}
+    {-# INLINE rem #-}
+    {-# INLINE quotRem #-}
+    {-# INLINE toInteger #-}
+    div = P.div
+    mod = P.mod
+    divMod = P.divMod
+    quot = P.quot
+    rem = P.rem
+    quotRem = P.quotRem
+    toInteger = P.toInteger
+
+instance Integral b => Integral (a -> b) where
+    {-# INLINE div #-}
+    {-# INLINE mod #-}
+    {-# INLINE divMod #-}
+    {-# INLINE quot #-}
+    {-# INLINE rem #-}
+    {-# INLINE quotRem #-}
+    {-# INLINE toInteger #-}
+    quot f1 f2 = \a -> quot (f1 a) (f2 a)
+    rem f1 f2 = \a -> rem (f1 a) (f2 a)
+    quotRem f1 f2 = (quot f1 f2, rem f1 f2)
+
+    div f1 f2 = \a -> div (f1 a) (f2 a)
+    mod f1 f2 = \a -> mod (f1 a) (f2 a)
+    divMod f1 f2 = (div f1 f2, mod f1 f2)
+
+    -- FIXME
+    toInteger = error "toInteger shouldn't be in the integral class b/c of bad function instance"
+
+---------------------------------------
+
+-- | Fields are Rings with a multiplicative inverse.
+--
+-- See <https://en.wikipedia.org/wiki/Field_%28mathematics%29 wikipedia>
+-- and <http://ncatlab.org/nlab/show/field ncatlab>
+-- for more details.
+class Ring r => Field r where
+    {-# INLINE reciprocal #-}
+    reciprocal :: r -> r
+    reciprocal r = one/r
+
+    {-# INLINE (/) #-}
+    infixl 7 /
+    (/) :: r -> r -> r
+    n/d = n * reciprocal d
+
+--     infixr 5 /=
+--     (/=) :: (PrimBase m) => Mutable m g -> g -> m ()
+--     (/=) = immutable2mutable (/)
+
+    {-# INLINE fromRational #-}
+    fromRational :: P.Rational-> r
+    fromRational r = fromInteger (numerator r) / fromInteger (denominator r)
 
 ---------------------------------------
 

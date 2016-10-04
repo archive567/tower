@@ -28,11 +28,12 @@ library
     Haskell2010
   ghc-options:
   hs-source-dirs:      
-
+    src
   exposed-modules:
-
+    Tower
   build-depends:
-    base >= 4.7 && < 5
+    base >= 4.7 && < 5,
+    protolude
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
