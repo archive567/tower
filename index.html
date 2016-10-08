@@ -1,8 +1,8 @@
-<h1 id="tower">tower</h1>
-<h2 id="plus">plus</h2>
-<p>When I first saw a monoid, my eyes glazed over the details in the midst of haskell concept overload. <code>mempty</code> was something that was empty I guessed, and m seemed to be a universal prefix shoved randomly throughout the haskell codebase. And <code>mappend</code>, well that must be how you append lists I guess, maybe in a monad thing. And <code>&lt;&gt;</code> - I just saw anything wrapped in greater than less than signs as one ofthose things I'd have to look up later.</p>
-<p>It took a year before I realised that mappend was just like adding up numbers, and mempty was just like 0. In slightly shorter time, I discovered that &lt;&gt; was just like + - except you couldn't say that.</p>
-<p>So, enough with the baby words and line noise, let's call them + and zero (and map!).</p>
+<meta charset="utf-8"> <link rel="stylesheet" href="other/lhs.css">
+<script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<h1 id="numeric-tower">numeric tower</h1>
 <p>This is a numeric tower built with:</p>
 <ul class="incremental">
 <li>boiler-plate category theory</li>
@@ -11,18 +11,727 @@
 <li>Monoid operator as zero</li>
 <li>Protolude as a reference point for fitting in with the rest of the haskell ecosystem.</li>
 </ul>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Protolude</span> <span class="kw">hiding</span> ((+),(-),(*),(/),zero,one,negate)
-<span class="kw">import </span><span class="dt">Tower</span>
-<span class="kw">import </span><span class="dt">Tower.Ring</span>
-<span class="kw">import </span><span class="dt">Tower.Vector</span>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE ConstraintKinds #-}</span>
+<span class="ot">{-# LANGUAGE CPP #-}</span>
+<span class="ot">{-# LANGUAGE PolyKinds #-}</span></code></pre></div>
+<p>Much of this class list is the same as <a href="https://github.com/mikeizbicki/subhask">subhask</a> as is much of the commentary.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Tower</span> (
+      <span class="dt">Semigroup</span>(<span class="fu">..</span>)
+    , <span class="dt">Cancellative</span> (<span class="fu">..</span>)
+    , <span class="dt">Monoid</span> (<span class="fu">..</span>)
+    , <span class="dt">Abelian</span>
+    , <span class="dt">Group</span> (<span class="fu">..</span>)
+    , <span class="dt">Rg</span>(<span class="fu">..</span>)
+    , <span class="dt">Rig</span>(<span class="fu">..</span>)
+    , <span class="dt">Rng</span>
+    , <span class="dt">Ring</span>(<span class="fu">..</span>)
+    , <span class="dt">Actor</span>
+    , <span class="dt">Action</span> (<span class="fu">..</span>)
+    , (<span class="fu">+.</span>)
+    , slowFromInteger
+    , <span class="dt">Integral</span>(<span class="fu">..</span>)
+    , fromIntegral
+    , <span class="dt">Field</span>(<span class="fu">..</span>)
+    , <span class="dt">OrdField</span>
+    , <span class="dt">BoundedField</span>(<span class="fu">..</span>)
+    , infinity
+    , negInfinity
+    , <span class="dt">ExpRing</span> (<span class="fu">..</span>)
+    , (<span class="fu">^</span>)
+    , <span class="dt">ExpField</span> (<span class="fu">..</span>)
+    , <span class="dt">Real</span> (<span class="fu">..</span>)
+    , <span class="dt">QuotientField</span>(<span class="fu">..</span>)
+    , <span class="dt">Scalar</span>
+    , <span class="dt">IsScalar</span>
+    , <span class="dt">HasScalar</span>
+    , <span class="kw">type</span> (<span class="fu">&gt;&lt;</span>)
+    , <span class="dt">Module</span> (<span class="fu">..</span>)
+    , (<span class="fu">*.</span>)
+    , <span class="dt">FreeModule</span> (<span class="fu">..</span>)
+    , <span class="dt">FiniteModule</span> (<span class="fu">..</span>)
+    , <span class="dt">VectorSpace</span> (<span class="fu">..</span>)
+    , <span class="dt">Normed</span> (<span class="fu">..</span>)
+    , abs
+    , <span class="dt">Metric</span> (<span class="fu">..</span>)
+    , isFartherThan
+    , lb2distanceUB
+    , <span class="dt">Banach</span> (<span class="fu">..</span>)
+    , <span class="dt">Hilbert</span> (<span class="fu">..</span>)
+    , squaredInnerProductNorm
+    , innerProductDistance
+    , innerProductNorm
+    , <span class="dt">TensorAlgebra</span> (<span class="fu">..</span>)
+) <span class="kw">where</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Protolude</span> ((.), ($), error, undefined)
+<span class="kw">import qualified</span> <span class="dt">Protolude</span> <span class="kw">as</span> <span class="dt">P</span></code></pre></div>
+<p>The main types that the tower hooks in to:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Protolude</span> (
+    <span class="dt">Int</span>,
+    <span class="dt">Integer</span>,
+    <span class="dt">Float</span>,
+    <span class="dt">Double</span>,
+    <span class="dt">Rational</span>,
+    <span class="dt">Eq</span>(<span class="fu">..</span>),
+    <span class="dt">Bool</span>(<span class="fu">..</span>),
+    <span class="dt">Ord</span>(<span class="fu">..</span>),
+    <span class="dt">Bounded</span>(<span class="fu">..</span>))</code></pre></div>
+<h2 id="plus">plus</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Semigroup</span> a <span class="kw">where</span>
+    <span class="ot">{-# MINIMAL (+) #-}</span>
+    <span class="kw">infixl</span> <span class="dv">6</span> <span class="fu">+</span>
+<span class="ot">    (+) ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</code></pre></div>
+<p>When I first saw a monoid, my eyes glazed over the details in the midst of haskell concept overload. <code>mempty</code> was something that was empty I guessed, and m seemed to be a universal prefix shoved randomly throughout the haskell codebase. And <code>mappend</code>, well that must be how you append lists I guess, maybe in a monad thing. And <code>&lt;&gt;</code> - I just saw anything wrapped in greater than less than signs as one of those operator things I'd have to look up later.</p>
+<p>It took a year before I realised that mappend was just like adding up numbers, and mempty was just like zero. In slightly shorter time, I discovered that &lt;&gt; was just like +, except you couldn't say that.</p>
+<p>So, enough with the baby words and line noise, let's call them + and zero.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Semigroup</span> <span class="dt">Int</span>      <span class="kw">where</span> (<span class="fu">+</span>) <span class="fu">=</span> (<span class="fu">P.+</span>)
+<span class="kw">instance</span> <span class="dt">Semigroup</span> <span class="dt">Integer</span>  <span class="kw">where</span> (<span class="fu">+</span>) <span class="fu">=</span> (<span class="fu">P.+</span>)
+<span class="kw">instance</span> <span class="dt">Semigroup</span> <span class="dt">Float</span>    <span class="kw">where</span> (<span class="fu">+</span>) <span class="fu">=</span> (<span class="fu">P.+</span>)
+<span class="kw">instance</span> <span class="dt">Semigroup</span> <span class="dt">Double</span>   <span class="kw">where</span> (<span class="fu">+</span>) <span class="fu">=</span> (<span class="fu">P.+</span>)
+<span class="kw">instance</span> <span class="dt">Semigroup</span> <span class="dt">Rational</span> <span class="kw">where</span> (<span class="fu">+</span>) <span class="fu">=</span> (<span class="fu">P.+</span>)
+<span class="kw">instance</span> <span class="dt">Semigroup</span> b <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    f<span class="fu">+</span>g <span class="fu">=</span> \a <span class="ot">-&gt;</span> f a <span class="fu">+</span> g a</code></pre></div>
+<h1 id="zero">zero</h1>
+<p>&quot;I think types that lack an empty element are a misfeature. They usually end up contaminating everything they touch, which is why semigroups forms an entire parallel ecosystem of its own.&quot; ~ <a href="http://haskell.1045720.n5.nabble.com/Proposal-Add-Data-Semigroup-to-base-as-a-superclass-of-Monoid-td5731447.html">tekmo</a></p>
+<p>The first 100,000 years of numerical analysis is on his side - positive integers lacking a zero didn't get very far.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Semigroup</span> g <span class="ot">=&gt;</span> <span class="dt">Monoid</span> g <span class="kw">where</span>
+<span class="ot">    zero ::</span> g
+
+<span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Int</span>       <span class="kw">where</span> zero <span class="fu">=</span> <span class="dv">0</span>
+<span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Integer</span>   <span class="kw">where</span> zero <span class="fu">=</span> <span class="dv">0</span>
+<span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Float</span>     <span class="kw">where</span> zero <span class="fu">=</span> <span class="dv">0</span>
+<span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Double</span>    <span class="kw">where</span> zero <span class="fu">=</span> <span class="dv">0</span>
+<span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Rational</span>  <span class="kw">where</span> zero <span class="fu">=</span> <span class="dv">0</span>
+
+<span class="kw">instance</span> <span class="dt">Monoid</span> b <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    zero <span class="fu">=</span> \a <span class="ot">-&gt;</span> zero</code></pre></div>
+<p>There is a school of thought, of course, that the choice of plus and zero is an arbitrary one, because you can wire up times and one just as nice. Well, not sure how other people did it, but I learnt my pluses before my times.</p>
+<h2 id="minus"><a href="http://en.wikipedia.org/wiki/Cancellative_semigroup">minus</a></h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Semigroup</span> g <span class="ot">=&gt;</span> <span class="dt">Cancellative</span> g <span class="kw">where</span>
+    <span class="kw">infixl</span> <span class="dv">6</span> <span class="fu">-</span>
+<span class="ot">    (-) ::</span> g <span class="ot">-&gt;</span> g <span class="ot">-&gt;</span> g
+
+<span class="kw">instance</span> <span class="dt">Cancellative</span> <span class="dt">Int</span>        <span class="kw">where</span> (<span class="fu">-</span>) <span class="fu">=</span> (<span class="fu">P.-</span>)
+<span class="kw">instance</span> <span class="dt">Cancellative</span> <span class="dt">Integer</span>    <span class="kw">where</span> (<span class="fu">-</span>) <span class="fu">=</span> (<span class="fu">P.-</span>)
+<span class="kw">instance</span> <span class="dt">Cancellative</span> <span class="dt">Float</span>      <span class="kw">where</span> (<span class="fu">-</span>) <span class="fu">=</span> (<span class="fu">P.-</span>)
+<span class="kw">instance</span> <span class="dt">Cancellative</span> <span class="dt">Double</span>     <span class="kw">where</span> (<span class="fu">-</span>) <span class="fu">=</span> (<span class="fu">P.-</span>)
+<span class="kw">instance</span> <span class="dt">Cancellative</span> <span class="dt">Rational</span>   <span class="kw">where</span> (<span class="fu">-</span>) <span class="fu">=</span> (<span class="fu">P.-</span>)
+<span class="kw">instance</span> <span class="dt">Cancellative</span> b <span class="ot">=&gt;</span> <span class="dt">Cancellative</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    f<span class="fu">-</span>g <span class="fu">=</span> \a <span class="ot">-&gt;</span> f a <span class="fu">-</span> g a</code></pre></div>
+<h2 id="group">group</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Cancellative</span> g, <span class="dt">Monoid</span> g) <span class="ot">=&gt;</span> <span class="dt">Group</span> g <span class="kw">where</span>
+<span class="ot">    negate ::</span> g <span class="ot">-&gt;</span> g
+    negate g <span class="fu">=</span> zero <span class="fu">-</span> g
+
+<span class="kw">instance</span> <span class="dt">Group</span> <span class="dt">Int</span>
+<span class="kw">instance</span> <span class="dt">Group</span> <span class="dt">Integer</span>
+<span class="kw">instance</span> <span class="dt">Group</span> <span class="dt">Float</span>
+<span class="kw">instance</span> <span class="dt">Group</span> <span class="dt">Double</span>
+<span class="kw">instance</span> <span class="dt">Group</span> <span class="dt">Rational</span>
+<span class="kw">instance</span> <span class="dt">Group</span> b <span class="ot">=&gt;</span> <span class="dt">Group</span> (a <span class="ot">-&gt;</span> b)</code></pre></div>
+<h2 id="abelian">abelian</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> <span class="dt">Abelian</span> m
+
+<span class="kw">instance</span> <span class="dt">Abelian</span> <span class="dt">Int</span>
+<span class="kw">instance</span> <span class="dt">Abelian</span> <span class="dt">Integer</span>
+<span class="kw">instance</span> <span class="dt">Abelian</span> <span class="dt">Float</span>
+<span class="kw">instance</span> <span class="dt">Abelian</span> <span class="dt">Double</span>
+<span class="kw">instance</span> <span class="dt">Abelian</span> <span class="dt">Rational</span>
+<span class="kw">instance</span> <span class="dt">Abelian</span> b <span class="ot">=&gt;</span> <span class="dt">Abelian</span> (a <span class="ot">-&gt;</span> b)</code></pre></div>
+<h2 id="times">times</h2>
+<p>A <a href="http://math.stackexchange.com/questions/359437/name-for-a-semiring-minus-multiplicative-identity-requirement">Rg</a></p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Abelian</span> r, <span class="dt">Monoid</span> r) <span class="ot">=&gt;</span> <span class="dt">Rg</span> r <span class="kw">where</span>
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">*</span>
+<span class="ot">    (*) ::</span> r <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
+
+<span class="kw">instance</span> <span class="dt">Rg</span> <span class="dt">Int</span>         <span class="kw">where</span> (<span class="fu">*</span>) <span class="fu">=</span> (<span class="fu">P.*</span>)
+<span class="kw">instance</span> <span class="dt">Rg</span> <span class="dt">Integer</span>     <span class="kw">where</span> (<span class="fu">*</span>) <span class="fu">=</span> (<span class="fu">P.*</span>)
+<span class="kw">instance</span> <span class="dt">Rg</span> <span class="dt">Float</span>       <span class="kw">where</span> (<span class="fu">*</span>) <span class="fu">=</span> (<span class="fu">P.*</span>)
+<span class="kw">instance</span> <span class="dt">Rg</span> <span class="dt">Double</span>      <span class="kw">where</span> (<span class="fu">*</span>) <span class="fu">=</span> (<span class="fu">P.*</span>)
+<span class="kw">instance</span> <span class="dt">Rg</span> <span class="dt">Rational</span>    <span class="kw">where</span> (<span class="fu">*</span>) <span class="fu">=</span> (<span class="fu">P.*</span>)
+<span class="kw">instance</span> <span class="dt">Rg</span> b <span class="ot">=&gt;</span> <span class="dt">Rg</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    f<span class="fu">*</span>g <span class="fu">=</span> \a <span class="ot">-&gt;</span> f a <span class="fu">*</span> g a</code></pre></div>
+<h2 id="one">one</h2>
+<p>A <a href="http://ncatlab.org/nlab/show/rig">Rig</a>, also known as a <a href="https://en.wikipedia.org/wiki/Semiring">semiring</a> is a Rg with multiplicative identity.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Monoid</span> r, <span class="dt">Rg</span> r) <span class="ot">=&gt;</span> <span class="dt">Rig</span> r <span class="kw">where</span>
+    <span class="co">-- | the multiplicative identity</span>
+<span class="ot">    one ::</span> r</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Rig</span> <span class="dt">Int</span>         <span class="kw">where</span> one <span class="fu">=</span> <span class="dv">1</span>
+<span class="kw">instance</span> <span class="dt">Rig</span> <span class="dt">Integer</span>     <span class="kw">where</span> one <span class="fu">=</span> <span class="dv">1</span>
+<span class="kw">instance</span> <span class="dt">Rig</span> <span class="dt">Float</span>       <span class="kw">where</span> one <span class="fu">=</span> <span class="dv">1</span>
+<span class="kw">instance</span> <span class="dt">Rig</span> <span class="dt">Double</span>      <span class="kw">where</span> one <span class="fu">=</span> <span class="dv">1</span>
+<span class="kw">instance</span> <span class="dt">Rig</span> <span class="dt">Rational</span>    <span class="kw">where</span> one <span class="fu">=</span> <span class="dv">1</span>
+<span class="kw">instance</span> (<span class="dt">Rig</span> b) <span class="ot">=&gt;</span> <span class="dt">Rig</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    one <span class="fu">=</span> \a <span class="ot">-&gt;</span> one</code></pre></div>
+<h2 id="rng">rng</h2>
+<p>A &quot;Ring&quot; without identity.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Rng</span> r <span class="fu">=</span> (<span class="dt">Rg</span> r, <span class="dt">Group</span> r)</code></pre></div>
+<h2 id="ring">ring</h2>
+<p>It is not part of the standard definition of rings that they have a &quot;fromInteger&quot; function. It follows from the definition, however, that we can construct such a function. The &quot;slowFromInteger&quot; function is this standard construction.</p>
+<p>See &lt;https://en.wikipedia.org/wiki/Ring_%28mathematics%29 wikipedia&gt; and &lt;http://ncatlab.org/nlab/show/ring ncatlab&gt; for more details.</p>
+<p>FIXME:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- We can construct a &quot;Module&quot; from any ring by taking (*)=(.*.).</span>
+<span class="co">-- Thus, &quot;Module&quot; should be a superclass of &quot;Ring&quot;.</span>
+<span class="co">-- Currently, however, this creates a class cycle, so we can&#39;t do it.</span>
+<span class="co">-- A number of type signatures are therefore more complicated than they need to be.</span>
+<span class="kw">class</span> (<span class="dt">Rng</span> r, <span class="dt">Rig</span> r) <span class="ot">=&gt;</span> <span class="dt">Ring</span> r <span class="kw">where</span>
+<span class="ot">    fromInteger ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> r
+    fromInteger <span class="fu">=</span> slowFromInteger
+
+<span class="co">-- | Here we construct an element of the Ring based on the additive and multiplicative identities.</span>
+<span class="co">-- This function takes O(n) time, where n is the size of the Integer.</span>
+<span class="co">-- Most types should be able to compute this value significantly faster.</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME: replace this with peasant multiplication.</span>
+<span class="ot">slowFromInteger ::</span> forall r<span class="fu">.</span> (<span class="dt">Rng</span> r, <span class="dt">Rig</span> r) <span class="ot">=&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> r
+slowFromInteger i <span class="fu">=</span> <span class="kw">if</span> i<span class="fu">&gt;</span><span class="dv">0</span>
+    <span class="kw">then</span>          P.foldl&#39; (<span class="fu">+</span>) zero <span class="fu">$</span> P.map (P.const (<span class="ot">one::</span>r)) [<span class="dv">1</span><span class="fu">..</span>        i]
+    <span class="kw">else</span> negate <span class="fu">$</span> P.foldl&#39; (<span class="fu">+</span>) zero <span class="fu">$</span> P.map (P.const (<span class="ot">one::</span>r)) [<span class="dv">1</span><span class="fu">..</span> negate i]
+
+<span class="kw">instance</span> <span class="dt">Ring</span> <span class="dt">Int</span>         <span class="kw">where</span> fromInteger <span class="fu">=</span> P.fromInteger
+<span class="kw">instance</span> <span class="dt">Ring</span> <span class="dt">Integer</span>     <span class="kw">where</span> fromInteger <span class="fu">=</span> P.fromInteger
+<span class="kw">instance</span> <span class="dt">Ring</span> <span class="dt">Float</span>       <span class="kw">where</span> fromInteger <span class="fu">=</span> P.fromInteger
+<span class="kw">instance</span> <span class="dt">Ring</span> <span class="dt">Double</span>      <span class="kw">where</span> fromInteger <span class="fu">=</span> P.fromInteger
+<span class="kw">instance</span> <span class="dt">Ring</span> <span class="dt">Rational</span>    <span class="kw">where</span> fromInteger <span class="fu">=</span> P.fromInteger
+<span class="kw">instance</span> <span class="dt">Ring</span> b <span class="ot">=&gt;</span> <span class="dt">Ring</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    fromInteger i <span class="fu">=</span> \a <span class="ot">-&gt;</span> fromInteger i</code></pre></div>
+<h2 id="actions"><a href="https://en.wikipedia.org/wiki/Semigroup_action">actions</a></h2>
+<p>A semigroup that acts on a type.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Actor</span> s
+
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> <span class="dt">Int</span>      <span class="fu">=</span> <span class="dt">Int</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> <span class="dt">Integer</span>  <span class="fu">=</span> <span class="dt">Integer</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> <span class="dt">Float</span>    <span class="fu">=</span> <span class="dt">Float</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> <span class="dt">Double</span>   <span class="fu">=</span> <span class="dt">Double</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> <span class="dt">Rational</span> <span class="fu">=</span> <span class="dt">Rational</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Actor</span> (a<span class="ot">-&gt;</span>b)   <span class="fu">=</span> a<span class="ot">-&gt;</span><span class="dt">Actor</span> b</code></pre></div>
+<p>Semigroup actions let us apply a semigroup to a set. The theory of Modules is essentially the theory of Ring actions. See <a href="http://mathoverflow.net/questions/100565/why-are-ring-actions-much-harder-to-find-than-group-actions">mathoverflow</a></p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- FIXME: We would like every Semigroup to act on itself, but this results in a class cycle.</span>
+<span class="kw">class</span> (<span class="dt">Semigroup</span> (<span class="dt">Actor</span> s)) <span class="ot">=&gt;</span> <span class="dt">Action</span> s <span class="kw">where</span>
+    <span class="kw">infixl</span> <span class="dv">6</span> <span class="fu">.+</span>
+<span class="ot">    (.+) ::</span> s <span class="ot">-&gt;</span> <span class="dt">Actor</span> s <span class="ot">-&gt;</span> s
+
+<span class="kw">infixr</span> <span class="dv">6</span> <span class="fu">+.</span>
+<span class="ot">(+.) ::</span> <span class="dt">Action</span> s <span class="ot">=&gt;</span> <span class="dt">Actor</span> s <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
+a <span class="fu">+.</span> s <span class="fu">=</span> s <span class="fu">.+</span> a
+
+<span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Int</span>      <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Integer</span>  <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Float</span>    <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Double</span>   <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Rational</span> <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="kw">instance</span> <span class="dt">Action</span> b <span class="ot">=&gt;</span> <span class="dt">Action</span> (a<span class="ot">-&gt;</span>b) <span class="kw">where</span>
+    f<span class="fu">.+</span>g <span class="fu">=</span> \x <span class="ot">-&gt;</span> f x<span class="fu">.+</span>g x</code></pre></div>
+<h2 id="integral">integral</h2>
+<p>from subhask:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | &#39;Integral&#39; numbers can be formed from a wide class of things that behave</span>
+<span class="co">-- like integers, but intuitively look nothing like integers.</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME: All Fields are integral domains; should we make it a subclass?  This would have the (minor?) problem of making the Integral class have to be an approximate embedding.</span>
+<span class="co">-- FIXME: Not all integral domains are homomorphic to the integers (e.g. a field)</span>
+<span class="fu">--</span>
+<span class="co">-- See wikipedia on &lt;https://en.wikipedia.org/wiki/Integral_element integral elements&gt;,</span>
+<span class="co">--  &lt;https://en.wikipedia.org/wiki/Integral_domain integral domains&gt;,</span>
+<span class="co">-- and the &lt;https://en.wikipedia.org/wiki/Ring_of_integers ring of integers&gt;.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Ring</span> a <span class="ot">=&gt;</span> <span class="dt">Integral</span> a <span class="kw">where</span>
+
+<span class="ot">    toInteger ::</span> a <span class="ot">-&gt;</span> <span class="dt">Integer</span>
+
+    <span class="kw">infixl</span> <span class="dv">7</span>  <span class="ot">`quot`</span>, <span class="ot">`rem`</span>
+
+    <span class="co">-- | truncates towards zero</span>
+<span class="ot">    quot ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+    quot a1 a2 <span class="fu">=</span> P.fst (quotRem a1 a2)
+
+<span class="ot">    rem ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+    rem a1 a2 <span class="fu">=</span> P.snd (quotRem a1 a2)
+
+<span class="ot">    quotRem ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> (a,a)
+
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="ot">`div`</span>, <span class="ot">`mod`</span>
+
+    <span class="co">-- | truncates towards negative infinity</span>
+<span class="ot">    div ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+    div a1 a2 <span class="fu">=</span> P.fst (divMod a1 a2)
+<span class="ot">    mod ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+    mod a1 a2 <span class="fu">=</span> P.snd (divMod a1 a2)
+
+<span class="ot">    divMod ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> (a,a)
 
 
-<span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-  print <span class="fu">$</span> (zero <span class="fu">+</span><span class="ot"> zero ::</span> <span class="dt">Integer</span>)
-  print <span class="fu">$</span> (zero <span class="fu">+</span> <span class="dv">2</span><span class="ot"> ::</span> <span class="dt">Integer</span>)
-  <span class="co">-- print $ (one * zero :: Double)</span>
-  <span class="co">-- print $ (negate 2.3 :: Float)</span>
-  <span class="co">-- print $ (zero/zero :: Integer)</span></code></pre></div>
-<h2 id="usage">usage</h2>
-<pre><code>stack install &amp;&amp; readme &amp;&amp; pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md --filter pandoc-include --mathjax</code></pre>
+<span class="kw">instance</span> <span class="dt">Integral</span> <span class="dt">Int</span> <span class="kw">where</span>
+    div <span class="fu">=</span> P.div
+    mod <span class="fu">=</span> P.mod
+    divMod <span class="fu">=</span> P.divMod
+    quot <span class="fu">=</span> P.quot
+    rem <span class="fu">=</span> P.rem
+    quotRem <span class="fu">=</span> P.quotRem
+    toInteger <span class="fu">=</span> P.toInteger
+
+<span class="kw">instance</span> <span class="dt">Integral</span> <span class="dt">Integer</span> <span class="kw">where</span>
+    div <span class="fu">=</span> P.div
+    mod <span class="fu">=</span> P.mod
+    divMod <span class="fu">=</span> P.divMod
+    quot <span class="fu">=</span> P.quot
+    rem <span class="fu">=</span> P.rem
+    quotRem <span class="fu">=</span> P.quotRem
+    toInteger <span class="fu">=</span> P.toInteger
+
+<span class="kw">instance</span> <span class="dt">Integral</span> b <span class="ot">=&gt;</span> <span class="dt">Integral</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    quot f1 f2 <span class="fu">=</span> \a <span class="ot">-&gt;</span> quot (f1 a) (f2 a)
+    rem f1 f2 <span class="fu">=</span> \a <span class="ot">-&gt;</span> rem (f1 a) (f2 a)
+    quotRem f1 f2 <span class="fu">=</span> (quot f1 f2, rem f1 f2)
+    div f1 f2 <span class="fu">=</span> \a <span class="ot">-&gt;</span> div (f1 a) (f2 a)
+    mod f1 f2 <span class="fu">=</span> \a <span class="ot">-&gt;</span> mod (f1 a) (f2 a)
+    divMod f1 f2 <span class="fu">=</span> (div f1 f2, mod f1 f2)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">fromIntegral<span class="ot"> ::</span> (<span class="dt">Integral</span> a, <span class="dt">Ring</span> b) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> b
+fromIntegral <span class="fu">=</span> fromInteger <span class="fu">.</span> toInteger</code></pre></div>
+<h2 id="field"><a href="https://en.wikipedia.org/wiki/Field_%28mathematics%29">field</a></h2>
+<p>Fields are Rings with a multiplicative inverse.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Ring</span> r <span class="ot">=&gt;</span> <span class="dt">Field</span> r <span class="kw">where</span>
+<span class="ot">    reciprocal ::</span> r <span class="ot">-&gt;</span> r
+    reciprocal r <span class="fu">=</span> one<span class="fu">/</span>r
+
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">/</span>
+<span class="ot">    (/) ::</span> r <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
+    n<span class="fu">/</span>d <span class="fu">=</span> n <span class="fu">*</span> reciprocal d
+
+<span class="ot">    fromRational ::</span> <span class="dt">Rational</span> <span class="ot">-&gt;</span> r
+    fromRational r <span class="fu">=</span> fromInteger (P.numerator r) <span class="fu">/</span> fromInteger (P.denominator r)
+
+<span class="kw">instance</span> <span class="dt">Field</span> <span class="dt">Float</span> <span class="kw">where</span>
+    (<span class="fu">/</span>) <span class="fu">=</span> (<span class="fu">P./</span>)
+    fromRational<span class="fu">=</span>P.fromRational
+
+<span class="kw">instance</span> <span class="dt">Field</span> <span class="dt">Double</span> <span class="kw">where</span>
+    (<span class="fu">/</span>) <span class="fu">=</span> (<span class="fu">P./</span>)
+    fromRational<span class="fu">=</span>P.fromRational
+
+<span class="kw">instance</span> <span class="dt">Field</span> <span class="dt">Rational</span> <span class="kw">where</span>
+    (<span class="fu">/</span>) <span class="fu">=</span> (<span class="fu">P./</span>)
+    fromRational<span class="fu">=</span>P.fromRational
+
+<span class="kw">instance</span> <span class="dt">Field</span> b <span class="ot">=&gt;</span> <span class="dt">Field</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
+    reciprocal f <span class="fu">=</span> reciprocal <span class="fu">.</span> f</code></pre></div>
+<h2 id="ordered-fields"><a href="http://en.wikipedia.org/wiki/Ordered_field">ordered fields</a></h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Field</span> r, <span class="dt">Ord</span> r, <span class="dt">Normed</span> r, <span class="dt">IsScalar</span> r) <span class="ot">=&gt;</span> <span class="dt">OrdField</span> r
+
+<span class="kw">instance</span> <span class="dt">OrdField</span> <span class="dt">Float</span>
+<span class="kw">instance</span> <span class="dt">OrdField</span> <span class="dt">Double</span>
+<span class="kw">instance</span> <span class="dt">OrdField</span> <span class="dt">Rational</span></code></pre></div>
+<h2 id="bounded-field"><a href="https://en.wikipedia.org/wiki/Extended_real_number_line">bounded field</a></h2>
+<p>from subhask:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | The prototypical example of a bounded field is the extended real numbers.</span>
+<span class="co">-- Other examples are the extended hyperreal numbers and the extended rationals.</span>
+<span class="co">-- Each of these fields has been extensively studied, but I don&#39;t know of any studies of this particular abstraction of these fields.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">OrdField</span> r, <span class="dt">Bounded</span> r) <span class="ot">=&gt;</span> <span class="dt">BoundedField</span> r <span class="kw">where</span>
+<span class="ot">    nan ::</span> r
+    nan <span class="fu">=</span> zero<span class="fu">/</span>zero
+
+<span class="ot">    isNaN ::</span> r <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+
+<span class="ot">infinity ::</span> <span class="dt">BoundedField</span> r <span class="ot">=&gt;</span> r
+infinity <span class="fu">=</span> maxBound
+
+<span class="ot">negInfinity ::</span> <span class="dt">BoundedField</span> r <span class="ot">=&gt;</span> r
+negInfinity <span class="fu">=</span> minBound
+
+
+<span class="kw">instance</span> <span class="dt">Bounded</span> <span class="dt">Float</span>  <span class="kw">where</span>
+    maxBound <span class="fu">=</span> <span class="dv">1</span><span class="fu">/</span><span class="dv">0</span>
+    minBound <span class="fu">=</span> <span class="fu">-</span><span class="dv">1</span><span class="fu">/</span><span class="dv">0</span>
+
+<span class="kw">instance</span> <span class="dt">Bounded</span> <span class="dt">Double</span> <span class="kw">where</span>
+    maxBound <span class="fu">=</span> <span class="dv">1</span><span class="fu">/</span><span class="dv">0</span>
+    minBound <span class="fu">=</span> <span class="fu">-</span><span class="dv">1</span><span class="fu">/</span><span class="dv">0</span>
+
+<span class="kw">instance</span> <span class="dt">BoundedField</span> <span class="dt">Float</span>  <span class="kw">where</span> isNaN <span class="fu">=</span> P.isNaN
+<span class="kw">instance</span> <span class="dt">BoundedField</span> <span class="dt">Double</span> <span class="kw">where</span> isNaN <span class="fu">=</span> P.isNaN</code></pre></div>
+<h2 id="quotient-field"><a href="http://en.wikipedia.org/wiki/Field_of_fractions">quotient field</a></h2>
+<p>A Quotient Field is a field with an 'IntegralDomain' as a subring.</p>
+<p>from subhask:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- There may be many such subrings (for example, every field has itself as an integral domain subring).</span>
+<span class="co">-- This is especially true in Haskell because we have different data types that represent essentially the same ring (e.g. &quot;Int&quot; and &quot;Integer&quot;).</span>
+<span class="co">-- Therefore this is a multiparameter type class.</span>
+<span class="co">-- The &#39;r&#39; parameter represents the quotient field, and the &#39;s&#39; parameter represents the subring.</span>
+<span class="co">-- The main purpose of this class is to provide functions that map elements in &#39;r&#39; to elements in &#39;s&#39; in various ways.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Ring</span> r, <span class="dt">Integral</span> s) <span class="ot">=&gt;</span> <span class="dt">QuotientField</span> r s <span class="kw">where</span>
+<span class="ot">    truncate    ::</span> r <span class="ot">-&gt;</span> s
+<span class="ot">    round       ::</span> r <span class="ot">-&gt;</span> s
+<span class="ot">    ceiling     ::</span> r <span class="ot">-&gt;</span> s
+<span class="ot">    floor       ::</span> r <span class="ot">-&gt;</span> s
+<span class="ot">    (^^)        ::</span> r <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> r</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="st">#define mkQuotientField(r,s) \</span>
+<span class="kw">instance</span> <span class="dt">QuotientField</span> r s <span class="kw">where</span> \
+    truncate <span class="fu">=</span> P.truncate; \
+    round    <span class="fu">=</span> P.round; \
+    ceiling  <span class="fu">=</span> P.ceiling; \
+    floor    <span class="fu">=</span> P.floor; \
+    (<span class="fu">^^</span>)     <span class="fu">=</span> (<span class="fu">P.^^</span>); \
+
+mkQuotientField(<span class="dt">Float</span>,<span class="dt">Int</span>)
+mkQuotientField(<span class="dt">Float</span>,<span class="dt">Integer</span>)
+mkQuotientField(<span class="dt">Double</span>,<span class="dt">Int</span>)
+mkQuotientField(<span class="dt">Double</span>,<span class="dt">Integer</span>)
+mkQuotientField(<span class="dt">Rational</span>,<span class="dt">Int</span>)
+mkQuotientField(<span class="dt">Rational</span>,<span class="dt">Integer</span>)
+
+
+<span class="kw">instance</span> <span class="dt">QuotientField</span> b1 b2 <span class="ot">=&gt;</span> <span class="dt">QuotientField</span> (a <span class="ot">-&gt;</span> b1) (a <span class="ot">-&gt;</span> b2) <span class="kw">where</span>
+    truncate f <span class="fu">=</span> \a <span class="ot">-&gt;</span> truncate <span class="fu">$</span> f a
+    round f <span class="fu">=</span> \a <span class="ot">-&gt;</span> round <span class="fu">$</span> f a
+    ceiling f <span class="fu">=</span> \a <span class="ot">-&gt;</span> ceiling <span class="fu">$</span> f a
+    floor f <span class="fu">=</span> \a <span class="ot">-&gt;</span> floor <span class="fu">$</span> f a
+    (<span class="fu">^^</span>) f1 f2 <span class="fu">=</span> \a <span class="ot">-&gt;</span> (<span class="fu">^^</span>) (f1 a) (f2 a)</code></pre></div>
+<h2 id="exponential-ring"><a href="http://en.wikipedia.org/wiki/Exponential_field#Exponential_rings">exponential ring</a></h2>
+<p>Rings augmented with the ability to take exponents.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- FIXME:</span>
+<span class="co">-- This class hierarchy doesn&#39;t give a nice way to exponentiate the integers.</span>
+<span class="co">-- We need to add instances for all the quotient groups.</span>
+<span class="kw">class</span> <span class="dt">Ring</span> r <span class="ot">=&gt;</span> <span class="dt">ExpRing</span> r <span class="kw">where</span>
+<span class="ot">    (**) ::</span> r <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
+    <span class="kw">infixl</span> <span class="dv">8</span> <span class="fu">**</span>
+
+<span class="ot">    logBase ::</span> r <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
+
+<span class="co">-- | An alternate form of &quot;(**)&quot; that some people find more convenient.</span>
+<span class="ot">(^) ::</span> <span class="dt">ExpRing</span> r <span class="ot">=&gt;</span> r <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
+(<span class="fu">^</span>) <span class="fu">=</span> (<span class="fu">**</span>)
+
+<span class="kw">instance</span> <span class="dt">ExpRing</span> <span class="dt">Float</span> <span class="kw">where</span>
+    (<span class="fu">**</span>) <span class="fu">=</span> (<span class="fu">P.**</span>)
+    logBase <span class="fu">=</span> P.logBase
+
+<span class="kw">instance</span> <span class="dt">ExpRing</span> <span class="dt">Double</span> <span class="kw">where</span>
+    (<span class="fu">**</span>) <span class="fu">=</span> (<span class="fu">P.**</span>)
+
+    logBase <span class="fu">=</span> P.logBase</code></pre></div>
+<h2 id="exponential-field"><a href="http://en.wikipedia.org/wiki/Exponential_field">exponential field</a></h2>
+<p>Fields augmented with exponents and logarithms.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">ExpRing</span> r, <span class="dt">Field</span> r) <span class="ot">=&gt;</span> <span class="dt">ExpField</span> r <span class="kw">where</span>
+<span class="ot">    sqrt ::</span> r <span class="ot">-&gt;</span> r
+    sqrt r <span class="fu">=</span> r<span class="fu">**</span>(one<span class="fu">/</span>one<span class="fu">+</span>one)
+
+<span class="ot">    exp ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    log ::</span> r <span class="ot">-&gt;</span> r
+
+<span class="kw">instance</span> <span class="dt">ExpField</span> <span class="dt">Float</span> <span class="kw">where</span>
+    sqrt <span class="fu">=</span> P.sqrt
+    log <span class="fu">=</span> P.log
+    exp <span class="fu">=</span> P.exp
+
+<span class="kw">instance</span> <span class="dt">ExpField</span> <span class="dt">Double</span> <span class="kw">where</span>
+    sqrt <span class="fu">=</span> P.sqrt
+    log <span class="fu">=</span> P.log
+    exp <span class="fu">=</span> P.exp</code></pre></div>
+<h2 id="real">real</h2>
+<p>Catch-all class for things the real numbers can do but don't exist in other classes.</p>
+<p>from subhask:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="fu">--</span>
+<span class="co">-- FIXME:</span>
+<span class="co">-- Factor this out into a more appropriate class hierarchy.</span>
+<span class="co">-- For example, some (all?) trig functions need to move to a separate class in order to support trig in finite fields (see &lt;https://en.wikipedia.org/wiki/Trigonometry_in_Galois_fields wikipedia&gt;).</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME:</span>
+<span class="co">-- This class is misleading/incorrect for complex numbers.</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME:</span>
+<span class="co">-- There&#39;s a lot more functions that need adding.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ExpField</span> r <span class="ot">=&gt;</span> <span class="dt">Real</span> r <span class="kw">where</span>
+<span class="ot">    pi ::</span> r
+<span class="ot">    sin ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    cos ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    tan ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    asin ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    acos ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    atan ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    sinh ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    cosh ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    tanh ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    asinh ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    acosh ::</span> r <span class="ot">-&gt;</span> r
+<span class="ot">    atanh ::</span> r <span class="ot">-&gt;</span> r
+
+<span class="kw">instance</span> <span class="dt">Real</span> <span class="dt">Float</span> <span class="kw">where</span>
+
+    pi <span class="fu">=</span> P.pi
+    sin <span class="fu">=</span> P.sin
+    cos <span class="fu">=</span> P.cos
+    tan <span class="fu">=</span> P.tan
+    asin <span class="fu">=</span> P.asin
+    acos <span class="fu">=</span> P.acos
+    atan <span class="fu">=</span> P.atan
+    sinh <span class="fu">=</span> P.sinh
+    cosh <span class="fu">=</span> P.cosh
+    tanh <span class="fu">=</span> P.tanh
+    asinh <span class="fu">=</span> P.asinh
+    acosh <span class="fu">=</span> P.acosh
+    atanh <span class="fu">=</span> P.atanh
+
+<span class="kw">instance</span> <span class="dt">Real</span> <span class="dt">Double</span> <span class="kw">where</span>
+    pi <span class="fu">=</span> P.pi
+    sin <span class="fu">=</span> P.sin
+    cos <span class="fu">=</span> P.cos
+    tan <span class="fu">=</span> P.tan
+    asin <span class="fu">=</span> P.asin
+    acos <span class="fu">=</span> P.acos
+    atan <span class="fu">=</span> P.atan
+    sinh <span class="fu">=</span> P.sinh
+    cosh <span class="fu">=</span> P.cosh
+    tanh <span class="fu">=</span> P.tanh
+    asinh <span class="fu">=</span> P.asinh
+    acosh <span class="fu">=</span> P.acosh
+    atanh <span class="fu">=</span> P.atanh</code></pre></div>
+<h2 id="scalar">scalar</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Scalar</span> m
+
+<span class="kw">infixr</span> <span class="dv">8</span> <span class="fu">&gt;&lt;</span>
+<span class="kw">type</span> family (<span class="fu">&gt;&lt;</span>) (<span class="ot">a::</span>k1) (<span class="ot">b::</span>k2)<span class="ot"> ::</span> <span class="fu">*</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Int</span>       <span class="fu">&gt;&lt;</span> <span class="dt">Int</span>        <span class="fu">=</span> <span class="dt">Int</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Integer</span>   <span class="fu">&gt;&lt;</span> <span class="dt">Integer</span>    <span class="fu">=</span> <span class="dt">Integer</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Float</span>     <span class="fu">&gt;&lt;</span> <span class="dt">Float</span>      <span class="fu">=</span> <span class="dt">Float</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Double</span>    <span class="fu">&gt;&lt;</span> <span class="dt">Double</span>     <span class="fu">=</span> <span class="dt">Double</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Rational</span>  <span class="fu">&gt;&lt;</span> <span class="dt">Rational</span>   <span class="fu">=</span> <span class="dt">Rational</span>
+<span class="kw">type</span> <span class="kw">instance</span> (a <span class="ot">-&gt;</span> b)  <span class="fu">&gt;&lt;</span> c          <span class="fu">=</span> a <span class="ot">-&gt;</span> (b<span class="fu">&gt;&lt;</span>c)
+
+<span class="co">-- | A synonym that covers everything we intuitively think scalar variables should have.</span>
+<span class="kw">type</span> <span class="dt">IsScalar</span> r <span class="fu">=</span> (<span class="dt">Ring</span> r, <span class="dt">Ord</span> r, <span class="dt">Scalar</span> r<span class="fu">~</span>r, <span class="dt">Normed</span> r, r<span class="fu">~</span>(r<span class="fu">&gt;&lt;</span>r))
+
+<span class="co">-- | A (sometimes) more convenient version of &quot;IsScalar&quot;.</span>
+<span class="kw">type</span> <span class="dt">HasScalar</span> a <span class="fu">=</span> <span class="dt">IsScalar</span> (<span class="dt">Scalar</span> a)
+
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> <span class="dt">Int</span>      <span class="fu">=</span> <span class="dt">Int</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> <span class="dt">Integer</span>  <span class="fu">=</span> <span class="dt">Integer</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> <span class="dt">Float</span>    <span class="fu">=</span> <span class="dt">Float</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> <span class="dt">Double</span>   <span class="fu">=</span> <span class="dt">Double</span>
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> <span class="dt">Rational</span> <span class="fu">=</span> <span class="dt">Rational</span>
+
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a,b) <span class="fu">=</span> <span class="dt">Scalar</span> a
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a,b,c) <span class="fu">=</span> <span class="dt">Scalar</span> a
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a,b,c,d) <span class="fu">=</span> <span class="dt">Scalar</span> a
+<span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a <span class="ot">-&gt;</span> b) <span class="fu">=</span> <span class="dt">Scalar</span> b</code></pre></div>
+<h2 id="normed"><a href="http://ncatlab.org/nlab/show/normed%20group">normed</a></h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
+<span class="co">-- | FIXME: What constraint should be here? Semigroup?</span>
+<span class="fu">--</span>
+<span class="kw">class</span>
+    ( <span class="dt">Ord</span> (<span class="dt">Scalar</span> g)
+    , <span class="dt">Scalar</span> (<span class="dt">Scalar</span> g) <span class="fu">~</span> <span class="dt">Scalar</span> g
+    , <span class="dt">Ring</span> (<span class="dt">Scalar</span> g)
+    ) <span class="ot">=&gt;</span> <span class="dt">Normed</span> g <span class="kw">where</span>
+<span class="ot">    size ::</span> g <span class="ot">-&gt;</span> <span class="dt">Scalar</span> g
+
+<span class="ot">    sizeSquared ::</span> g <span class="ot">-&gt;</span> <span class="dt">Scalar</span> g
+    sizeSquared g <span class="fu">=</span> s<span class="fu">*</span>s
+        <span class="kw">where</span>
+            s <span class="fu">=</span> size g
+
+abs<span class="ot"> ::</span> <span class="dt">IsScalar</span> g <span class="ot">=&gt;</span> g <span class="ot">-&gt;</span> g
+abs <span class="fu">=</span> size
+
+<span class="kw">instance</span> <span class="dt">Normed</span> <span class="dt">Int</span>       <span class="kw">where</span> size <span class="fu">=</span> P.abs
+<span class="kw">instance</span> <span class="dt">Normed</span> <span class="dt">Integer</span>   <span class="kw">where</span> size <span class="fu">=</span> P.abs
+<span class="kw">instance</span> <span class="dt">Normed</span> <span class="dt">Float</span>     <span class="kw">where</span> size <span class="fu">=</span> P.abs
+<span class="kw">instance</span> <span class="dt">Normed</span> <span class="dt">Double</span>    <span class="kw">where</span> size <span class="fu">=</span> P.abs
+<span class="kw">instance</span> <span class="dt">Normed</span> <span class="dt">Rational</span>  <span class="kw">where</span> size <span class="fu">=</span> P.abs</code></pre></div>
+<h2 id="module"><a href="https://en.wikipedia.org/wiki/Module_(mathematics)">module</a></h2>
+<p>Scalar multiplication</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
+<span class="kw">class</span>
+    ( <span class="dt">Abelian</span> v
+    , <span class="dt">Group</span> v
+    , <span class="dt">HasScalar</span> v
+    , v <span class="fu">~</span> (v<span class="fu">&gt;&lt;</span><span class="dt">Scalar</span> v)
+    ) <span class="ot">=&gt;</span> <span class="dt">Module</span> v
+        <span class="kw">where</span>
+
+    <span class="co">-- | Scalar multiplication.</span>
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">.*</span>
+<span class="ot">    (.*) ::</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> v
+
+<span class="ot">{-# INLINE (*.) #-}</span>
+<span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">*.</span>
+<span class="ot">(*.) ::</span> <span class="dt">Module</span> v <span class="ot">=&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> v
+r <span class="fu">*.</span> v  <span class="fu">=</span> v <span class="fu">.*</span> r
+
+<span class="kw">instance</span> <span class="dt">Module</span> <span class="dt">Int</span>       <span class="kw">where</span> (<span class="fu">.*</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">Module</span> <span class="dt">Integer</span>   <span class="kw">where</span> (<span class="fu">.*</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">Module</span> <span class="dt">Float</span>     <span class="kw">where</span> (<span class="fu">.*</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">Module</span> <span class="dt">Double</span>    <span class="kw">where</span> (<span class="fu">.*</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">Module</span> <span class="dt">Rational</span>  <span class="kw">where</span> (<span class="fu">.*</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+
+<span class="kw">instance</span>
+    ( <span class="dt">Module</span> b
+    ) <span class="ot">=&gt;</span> <span class="dt">Module</span> (a <span class="ot">-&gt;</span> b)
+        <span class="kw">where</span>
+    f <span class="fu">.*</span>  b <span class="fu">=</span> \a <span class="ot">-&gt;</span> f a <span class="fu">.*</span>  b
+
+</code></pre></div>
+<h2 id="free-module"><a href="https://en.wikipedia.org/wiki/Free_module">free module</a></h2>
+<p>element-wise multiplication</p>
+<p>See also <a href="http://en.wikipedia.org/wiki/Hadamard_product_%28matrices%29">hadamard multiplication</a>.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Module</span> v <span class="ot">=&gt;</span> <span class="dt">FreeModule</span> v <span class="kw">where</span>
+
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">.*.</span>
+<span class="ot">    (.*.) ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> v
+
+    <span class="co">-- | The identity for Hadamard multiplication.</span>
+    <span class="co">-- Intuitively, this object has the value &quot;one&quot; in every column.</span>
+<span class="ot">    ones ::</span> v
+
+<span class="kw">instance</span> <span class="dt">FreeModule</span> <span class="dt">Int</span>       <span class="kw">where</span> (<span class="fu">.*.</span>) <span class="fu">=</span> (<span class="fu">*</span>); ones <span class="fu">=</span> one
+<span class="kw">instance</span> <span class="dt">FreeModule</span> <span class="dt">Integer</span>   <span class="kw">where</span> (<span class="fu">.*.</span>) <span class="fu">=</span> (<span class="fu">*</span>); ones <span class="fu">=</span> one
+<span class="kw">instance</span> <span class="dt">FreeModule</span> <span class="dt">Float</span>     <span class="kw">where</span> (<span class="fu">.*.</span>) <span class="fu">=</span> (<span class="fu">*</span>); ones <span class="fu">=</span> one
+<span class="kw">instance</span> <span class="dt">FreeModule</span> <span class="dt">Double</span>    <span class="kw">where</span> (<span class="fu">.*.</span>) <span class="fu">=</span> (<span class="fu">*</span>); ones <span class="fu">=</span> one
+<span class="kw">instance</span> <span class="dt">FreeModule</span> <span class="dt">Rational</span>  <span class="kw">where</span> (<span class="fu">.*.</span>) <span class="fu">=</span> (<span class="fu">*</span>); ones <span class="fu">=</span> one
+
+<span class="kw">instance</span>
+    ( <span class="dt">FreeModule</span> b
+    ) <span class="ot">=&gt;</span> <span class="dt">FreeModule</span> (a <span class="ot">-&gt;</span> b)
+        <span class="kw">where</span>
+    g <span class="fu">.*.</span> f <span class="fu">=</span> \a <span class="ot">-&gt;</span> g a <span class="fu">.*.</span> f a
+    ones <span class="fu">=</span> \_ <span class="ot">-&gt;</span> ones
+
+<span class="fu">---------------------------------------</span>
+</code></pre></div>
+<h2 id="finite-module">finite module</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | If our &quot;FreeModule&quot; has a finite basis, then we can:</span>
+<span class="fu">--</span>
+<span class="co">-- * index into the modules basis coefficients</span>
+<span class="fu">--</span>
+<span class="co">-- * provide a dense construction method that&#39;s a bit more convenient than &quot;fromIxList&quot;.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span>
+    ( <span class="dt">FreeModule</span> v
+    ) <span class="ot">=&gt;</span> <span class="dt">FiniteModule</span> v
+        <span class="kw">where</span>
+    <span class="co">-- | Returns the dimension of the object.</span>
+    <span class="co">-- For some objects, this may be known statically, and so the parameter will not be &quot;seq&quot;ed.</span>
+    <span class="co">-- But for others, this may not be known statically, and so the parameter will be &quot;seq&quot;ed.</span>
+<span class="ot">    dim ::</span> v <span class="ot">-&gt;</span> <span class="dt">Int</span>
+
+<span class="ot">    unsafeToModule ::</span> [<span class="dt">Scalar</span> v] <span class="ot">-&gt;</span> v
+
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Int</span>       <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Integer</span>   <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Float</span>     <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Double</span>    <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Rational</span>  <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
+
+<span class="fu">---------------------------------------</span></code></pre></div>
+<h2 id="vector-space">vector space</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
+<span class="kw">class</span> (<span class="dt">FreeModule</span> v, <span class="dt">Field</span> (<span class="dt">Scalar</span> v)) <span class="ot">=&gt;</span> <span class="dt">VectorSpace</span> v <span class="kw">where</span>
+
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">./</span>
+<span class="ot">    (./) ::</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> v
+    v <span class="fu">./</span> r <span class="fu">=</span> v <span class="fu">.*</span> reciprocal r
+
+    <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">./.</span>
+<span class="ot">    (./.) ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> v
+
+<span class="kw">instance</span> <span class="dt">VectorSpace</span> <span class="dt">Float</span>     <span class="kw">where</span> (<span class="fu">./</span>) <span class="fu">=</span> (<span class="fu">/</span>); (<span class="fu">./.</span>) <span class="fu">=</span> (<span class="fu">/</span>)
+<span class="kw">instance</span> <span class="dt">VectorSpace</span> <span class="dt">Double</span>    <span class="kw">where</span> (<span class="fu">./</span>) <span class="fu">=</span> (<span class="fu">/</span>); (<span class="fu">./.</span>) <span class="fu">=</span> (<span class="fu">/</span>)
+<span class="kw">instance</span> <span class="dt">VectorSpace</span> <span class="dt">Rational</span>  <span class="kw">where</span> (<span class="fu">./</span>) <span class="fu">=</span> (<span class="fu">/</span>); (<span class="fu">./.</span>) <span class="fu">=</span> (<span class="fu">/</span>)
+
+<span class="kw">instance</span> <span class="dt">VectorSpace</span> b <span class="ot">=&gt;</span> <span class="dt">VectorSpace</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span> g <span class="fu">./.</span> f <span class="fu">=</span> \a <span class="ot">-&gt;</span> g a <span class="fu">./.</span> f a</code></pre></div>
+<h2 id="metric">metric</h2>
+<p>Metric spaces give us the most intuitive notion of distance between objects.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="fu">--</span>
+<span class="co">-- FIXME: There are many other notions of distance and we should make a whole hierarchy.</span>
+<span class="kw">class</span>
+    ( <span class="dt">HasScalar</span> v
+    , <span class="dt">Eq</span> v
+    , (<span class="dt">Scalar</span> v) <span class="fu">~</span> v
+    ) <span class="ot">=&gt;</span> <span class="dt">Metric</span> v
+        <span class="kw">where</span>
+
+<span class="ot">    distance ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+
+    <span class="co">-- | If the distance between two datapoints is less than or equal to the upper bound,</span>
+    <span class="co">-- then this function will return the distance.</span>
+    <span class="co">-- Otherwise, it will return some number greater than the upper bound.</span>
+<span class="ot">    distanceUB ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+    distanceUB v1 v2 _ <span class="fu">=</span> distance v1 v2
+
+<span class="co">-- | Calling this function will be faster on some &#39;Metric&#39;s than manually checking if distance is greater than the bound.</span>
+<span class="ot">isFartherThan ::</span> <span class="dt">Metric</span> v <span class="ot">=&gt;</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+isFartherThan s1 s2 b <span class="fu">=</span> distanceUB s1 s2 b <span class="fu">&gt;</span> b
+
+<span class="co">-- | This function constructs an efficient default implementation for &#39;distanceUB&#39; given a function that lower bounds the distance metric.</span>
+lb2distanceUB <span class="ot">::</span>
+    ( <span class="dt">Metric</span> a
+    ) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Scalar</span> a)
+      <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Scalar</span> a <span class="ot">-&gt;</span> <span class="dt">Scalar</span> a)
+lb2distanceUB lb p q b <span class="fu">=</span> <span class="kw">if</span> lbpq <span class="fu">&gt;</span> b
+    <span class="kw">then</span> lbpq
+    <span class="kw">else</span> distance p q
+    <span class="kw">where</span>
+        lbpq <span class="fu">=</span> lb p q</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Metric</span> <span class="dt">Float</span>    <span class="kw">where</span> distance x1 x2 <span class="fu">=</span> abs <span class="fu">$</span> x1 <span class="fu">-</span> x2
+<span class="kw">instance</span> <span class="dt">Metric</span> <span class="dt">Double</span>   <span class="kw">where</span> distance x1 x2 <span class="fu">=</span> abs <span class="fu">$</span> x1 <span class="fu">-</span> x2
+<span class="kw">instance</span> <span class="dt">Metric</span> <span class="dt">Rational</span> <span class="kw">where</span> distance x1 x2 <span class="fu">=</span> abs <span class="fu">$</span> x1 <span class="fu">-</span> x2</code></pre></div>
+<h2 id="banach"><a href="http://en.wikipedia.org/wiki/Banach_space">banach</a></h2>
+<p>A Banach space is a Vector Space equipped with a compatible Norm and Metric.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">VectorSpace</span> v, <span class="dt">Normed</span> v, <span class="dt">Metric</span> v) <span class="ot">=&gt;</span> <span class="dt">Banach</span> v <span class="kw">where</span>
+<span class="ot">    normalize ::</span> v <span class="ot">-&gt;</span> v
+    normalize v <span class="fu">=</span> v <span class="fu">./</span> size v
+
+<span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Float</span>
+<span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Double</span>
+<span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Rational</span></code></pre></div>
+<h2 id="hilbert">hilbert</h2>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.</span>
+<span class="fu">--</span>
+<span class="co">-- See &lt;http://en.wikipedia.org/wiki/Hilbert_space wikipedia&gt; for more details.</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME:</span>
+<span class="co">-- The result of a dot product must always be an ordered field.</span>
+<span class="co">-- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.</span>
+<span class="co">-- But the &quot;OrdField&quot; constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.</span>
+<span class="co">-- See &lt;http://math.stackexchange.com/questions/49348/inner-product-spaces-over-finite-fields&gt; and &lt;http://math.stackexchange.com/questions/47916/banach-spaces-over-fields-other-than-mathbbc&gt; for some technical details.</span>
+<span class="kw">class</span> ( <span class="dt">Banach</span> v , <span class="dt">TensorAlgebra</span> v , <span class="dt">Real</span> (<span class="dt">Scalar</span> v), <span class="dt">OrdField</span> (<span class="dt">Scalar</span> v) ) <span class="ot">=&gt;</span> <span class="dt">Hilbert</span> v <span class="kw">where</span>
+    infix <span class="dv">8</span> <span class="fu">&lt;&gt;</span>
+<span class="ot">    (&lt;&gt;) ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+
+<span class="kw">instance</span> <span class="dt">Hilbert</span> <span class="dt">Float</span>    <span class="kw">where</span> (<span class="fu">&lt;&gt;</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">Hilbert</span> <span class="dt">Double</span>   <span class="kw">where</span> (<span class="fu">&lt;&gt;</span>) <span class="fu">=</span> (<span class="fu">*</span>)
+
+<span class="ot">{-# INLINE squaredInnerProductNorm #-}</span>
+<span class="ot">squaredInnerProductNorm ::</span> <span class="dt">Hilbert</span> v <span class="ot">=&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+squaredInnerProductNorm v <span class="fu">=</span> v<span class="fu">&lt;&gt;</span>v
+
+<span class="ot">{-# INLINE innerProductNorm #-}</span>
+<span class="ot">innerProductNorm ::</span> <span class="dt">Hilbert</span> v <span class="ot">=&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+innerProductNorm <span class="fu">=</span> undefined <span class="co">-- sqrt . squaredInnerProductNorm</span>
+
+<span class="ot">{-# INLINE innerProductDistance #-}</span>
+<span class="ot">innerProductDistance ::</span> <span class="dt">Hilbert</span> v <span class="ot">=&gt;</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
+innerProductDistance _ _ <span class="fu">=</span> undefined <span class="co">--innerProductNorm $ v1-v2</span></code></pre></div>
+<h2 id="tensor-algebra">tensor algebra</h2>
+<p>:tada:</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | Tensor algebras generalize the outer product of vectors to construct a matrix.</span>
+<span class="fu">--</span>
+<span class="co">-- See &lt;https://en.wikipedia.org/wiki/Tensor_algebra wikipedia&gt; for details.</span>
+<span class="fu">--</span>
+<span class="co">-- FIXME:</span>
+<span class="co">-- This needs to be replaced by the Tensor product in the Monoidal category Vect</span>
+<span class="kw">class</span>
+    ( <span class="dt">VectorSpace</span> v
+    , <span class="dt">VectorSpace</span> (v<span class="fu">&gt;&lt;</span>v)
+    , <span class="dt">Scalar</span> (v<span class="fu">&gt;&lt;</span>v) <span class="fu">~</span> <span class="dt">Scalar</span> v
+    , <span class="dt">Normed</span> (v<span class="fu">&gt;&lt;</span>v)     <span class="co">-- the size represents the determinant</span>
+    , <span class="dt">Field</span> (v<span class="fu">&gt;&lt;</span>v)
+    ) <span class="ot">=&gt;</span> <span class="dt">TensorAlgebra</span> v
+        <span class="kw">where</span>
+
+    <span class="co">-- | Take the tensor product of two vectors</span>
+<span class="ot">    (&gt;&lt;) ::</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> (v<span class="fu">&gt;&lt;</span>v)
+
+    <span class="co">-- | &quot;left multiplication&quot; of a square matrix</span>
+<span class="ot">    vXm ::</span> v <span class="ot">-&gt;</span> (v<span class="fu">&gt;&lt;</span>v) <span class="ot">-&gt;</span> v
+
+    <span class="co">-- | &quot;right multiplication&quot; of a square matrix</span>
+<span class="ot">    mXv ::</span> (v<span class="fu">&gt;&lt;</span>v) <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> v
+
+<span class="kw">instance</span> <span class="dt">TensorAlgebra</span> <span class="dt">Float</span>    <span class="kw">where</span>  (<span class="fu">&gt;&lt;</span>) <span class="fu">=</span> (<span class="fu">*</span>); vXm <span class="fu">=</span> (<span class="fu">*</span>);  mXv <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">TensorAlgebra</span> <span class="dt">Double</span>   <span class="kw">where</span>  (<span class="fu">&gt;&lt;</span>) <span class="fu">=</span> (<span class="fu">*</span>); vXm <span class="fu">=</span> (<span class="fu">*</span>);  mXv <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="kw">instance</span> <span class="dt">TensorAlgebra</span> <span class="dt">Rational</span> <span class="kw">where</span>  (<span class="fu">&gt;&lt;</span>) <span class="fu">=</span> (<span class="fu">*</span>); vXm <span class="fu">=</span> (<span class="fu">*</span>);  mXv <span class="fu">=</span> (<span class="fu">*</span>)</code></pre></div>

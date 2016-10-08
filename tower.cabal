@@ -3,9 +3,11 @@ name:
 version:
   0.1.0.0
 synopsis:
-  See readme.lhs
+  See src/Tower.lhs
 description:
-  See readme.lhs
+  See src/Tower.lhs
+category:
+  mathematics
 homepage:
   https://github.com/tonyday567/tower
 license:
@@ -36,57 +38,6 @@ library
   build-depends:
     base >= 4.7 && < 5,
     protolude
-  default-extensions:
-    NoImplicitPrelude,
-    UnicodeSyntax,
-    BangPatterns,
-    BinaryLiterals,
-    DeriveFoldable,
-    DeriveFunctor,
-    DeriveGeneric,
-    DeriveTraversable,
-    DisambiguateRecordFields,
-    EmptyCase,
-    FlexibleContexts,
-    FlexibleInstances,
-    FunctionalDependencies,
-    GADTSyntax,
-    InstanceSigs,
-    KindSignatures,
-    LambdaCase,
-    MonadComprehensions,
-    MultiParamTypeClasses,
-    MultiWayIf,
-    NegativeLiterals,
-    OverloadedStrings,
-    ParallelListComp,
-    PartialTypeSignatures,
-    PatternSynonyms,
-    RankNTypes,
-    RecordWildCards,
-    RecursiveDo,
-    ScopedTypeVariables,
-    TupleSections,
-    TypeFamilies,
-    TypeOperators
-
-executable readme
-  default-language:
-    Haskell2010
-  ghc-options:
-    -funbox-strict-fields
-    -fforce-recomp
-    -threaded
-    -rtsopts
-    -with-rtsopts=-N
-  hs-source-dirs:
-    ./
-  main-is:
-    readme.lhs
-  build-depends:
-    base >= 4.7 && < 5,
-    protolude,
-    tower
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
