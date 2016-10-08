@@ -4,7 +4,7 @@
   src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
-numeric tower
+[tower](https://github.com/tonyday567/tower)
 ===
 
 This is a numeric tower built with:
