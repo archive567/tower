@@ -215,23 +215,21 @@ A "Ring" without identity.
 > type Rng r = (Rg r, Group r)
 >
 
-ring
+[ring](https://en.wikipedia.org/wiki/Ring_%28mathematics%29)
 ---
 
 It is not part of the standard definition of rings that they have a "fromInteger" function.
 It follows from the definition, however, that we can construct such a function.
 The "slowFromInteger" function is this standard construction.
 
-See <https://en.wikipedia.org/wiki/Ring_%28mathematics%29 wikipedia>
-and <http://ncatlab.org/nlab/show/ring ncatlab>
-for more details.
+See [ncatlab](http://ncatlab.org/nlab/show/ring) for more details.
 
-FIXME:
-
+> -- FIXME:
 > -- We can construct a "Module" from any ring by taking (*)=(.*.).
 > -- Thus, "Module" should be a superclass of "Ring".
 > -- Currently, however, this creates a class cycle, so we can't do it.
 > -- A number of type signatures are therefore more complicated than they need to be.
+
 > class (Rng r, Rig r) => Ring r where
 >     fromInteger :: Integer -> r
 >     fromInteger = slowFromInteger
@@ -287,21 +285,10 @@ Semigroup actions let us apply a semigroup to a set. The theory of Modules is es
 > instance Action b => Action (a->b) where
 >     f.+g = \x -> f x.+g x
 
-integral
+[integral](https://en.wikipedia.org/wiki/Integral_element)
 ---
 
-from subhask:
-
-> -- | 'Integral' numbers can be formed from a wide class of things that behave
-> -- like integers, but intuitively look nothing like integers.
-> --
-> -- FIXME: All Fields are integral domains; should we make it a subclass?  This would have the (minor?) problem of making the Integral class have to be an approximate embedding.
-> -- FIXME: Not all integral domains are homomorphic to the integers (e.g. a field)
-> --
-> -- See wikipedia on <https://en.wikipedia.org/wiki/Integral_element integral elements>,
-> --  <https://en.wikipedia.org/wiki/Integral_domain integral domains>,
-> -- and the <https://en.wikipedia.org/wiki/Ring_of_integers ring of integers>.
-
+See also [Integral domain](https://en.wikipedia.org/wiki/Integral_domain) and [ring of integers](https://en.wikipedia.org/wiki/Ring_of_integers) wikipedia.
 
 > class Ring a => Integral a where
 >
@@ -543,9 +530,6 @@ from subhask:
 > --
 > -- FIXME:
 > -- This class is misleading/incorrect for complex numbers.
-> --
-> -- FIXME:
-> -- There's a lot more functions that need adding.
 
 > class ExpField r => Real r where
 >     pi :: r
@@ -629,9 +613,6 @@ scalar
 [normed](http://ncatlab.org/nlab/show/normed%20group)
 ---
 
->
-> -- | FIXME: What constraint should be here? Semigroup?
-> --
 > class
 >     ( Ord (Scalar g)
 >     , Scalar (Scalar g) ~ Scalar g
@@ -729,13 +710,6 @@ See also [hadamard multiplication](http://en.wikipedia.org/wiki/Hadamard_product
 finite module
 ---
 
-> -- | If our "FreeModule" has a finite basis, then we can:
-> --
-> -- * index into the modules basis coefficients
-> --
-> -- * provide a dense construction method that's a bit more convenient than "fromIxList".
-
-
 > class
 >     ( FreeModule v
 >     ) => FiniteModule v
@@ -753,12 +727,10 @@ finite module
 > instance FiniteModule Double    where dim _ = 1; unsafeToModule [x] = x
 > instance FiniteModule Rational  where dim _ = 1; unsafeToModule [x] = x
 >
-> ---------------------------------------
 
 vector space
 ---
 
->
 > class (FreeModule v, Field (Scalar v)) => VectorSpace v where
 >
 >     infixl 7 ./
@@ -831,13 +803,11 @@ A Banach space is a Vector Space equipped with a compatible Norm and Metric.
 > instance Banach Rational
 >
 
-hilbert
+[hilbert](http://en.wikipedia.org/wiki/Hilbert_space)
 ---
 
-> -- | Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.
-> --
-> -- See <http://en.wikipedia.org/wiki/Hilbert_space wikipedia> for more details.
-> --
+Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.
+
 > -- FIXME:
 > -- The result of a dot product must always be an ordered field.
 > -- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.
@@ -863,17 +833,11 @@ hilbert
 > innerProductDistance _ _ = undefined --innerProductNorm $ v1-v2
 >
 
-tensor algebra
+[tensor algebra](https://en.wikipedia.org/wiki/Tensor_algebra)
 ---
 
-:tada:
+Tensor algebras generalize the outer product of vectors to construct a matrix.
 
-> -- | Tensor algebras generalize the outer product of vectors to construct a matrix.
-> --
-> -- See <https://en.wikipedia.org/wiki/Tensor_algebra wikipedia> for details.
-> --
-> -- FIXME:
-> -- This needs to be replaced by the Tensor product in the Monoidal category Vect
 > class
 >     ( VectorSpace v
 >     , VectorSpace (v><v)

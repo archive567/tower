@@ -165,15 +165,15 @@
 <h2 id="rng">rng</h2>
 <p>A &quot;Ring&quot; without identity.</p>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Rng</span> r <span class="fu">=</span> (<span class="dt">Rg</span> r, <span class="dt">Group</span> r)</code></pre></div>
-<h2 id="ring">ring</h2>
+<h2 id="ring"><a href="https://en.wikipedia.org/wiki/Ring_%28mathematics%29">ring</a></h2>
 <p>It is not part of the standard definition of rings that they have a &quot;fromInteger&quot; function. It follows from the definition, however, that we can construct such a function. The &quot;slowFromInteger&quot; function is this standard construction.</p>
-<p>See &lt;https://en.wikipedia.org/wiki/Ring_%28mathematics%29 wikipedia&gt; and &lt;http://ncatlab.org/nlab/show/ring ncatlab&gt; for more details.</p>
-<p>FIXME:</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- We can construct a &quot;Module&quot; from any ring by taking (*)=(.*.).</span>
+<p>See <a href="http://ncatlab.org/nlab/show/ring">ncatlab</a> for more details.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- FIXME:</span>
+<span class="co">-- We can construct a &quot;Module&quot; from any ring by taking (*)=(.*.).</span>
 <span class="co">-- Thus, &quot;Module&quot; should be a superclass of &quot;Ring&quot;.</span>
 <span class="co">-- Currently, however, this creates a class cycle, so we can&#39;t do it.</span>
-<span class="co">-- A number of type signatures are therefore more complicated than they need to be.</span>
-<span class="kw">class</span> (<span class="dt">Rng</span> r, <span class="dt">Rig</span> r) <span class="ot">=&gt;</span> <span class="dt">Ring</span> r <span class="kw">where</span>
+<span class="co">-- A number of type signatures are therefore more complicated than they need to be.</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Rng</span> r, <span class="dt">Rig</span> r) <span class="ot">=&gt;</span> <span class="dt">Ring</span> r <span class="kw">where</span>
 <span class="ot">    fromInteger ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> r
     fromInteger <span class="fu">=</span> slowFromInteger
 
@@ -221,17 +221,8 @@ a <span class="fu">+.</span> s <span class="fu">=</span> s <span class="fu">.+</
 <span class="kw">instance</span> <span class="dt">Action</span> <span class="dt">Rational</span> <span class="kw">where</span> (<span class="fu">.+</span>) <span class="fu">=</span> (<span class="fu">+</span>)
 <span class="kw">instance</span> <span class="dt">Action</span> b <span class="ot">=&gt;</span> <span class="dt">Action</span> (a<span class="ot">-&gt;</span>b) <span class="kw">where</span>
     f<span class="fu">.+</span>g <span class="fu">=</span> \x <span class="ot">-&gt;</span> f x<span class="fu">.+</span>g x</code></pre></div>
-<h2 id="integral">integral</h2>
-<p>from subhask:</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | &#39;Integral&#39; numbers can be formed from a wide class of things that behave</span>
-<span class="co">-- like integers, but intuitively look nothing like integers.</span>
-<span class="fu">--</span>
-<span class="co">-- FIXME: All Fields are integral domains; should we make it a subclass?  This would have the (minor?) problem of making the Integral class have to be an approximate embedding.</span>
-<span class="co">-- FIXME: Not all integral domains are homomorphic to the integers (e.g. a field)</span>
-<span class="fu">--</span>
-<span class="co">-- See wikipedia on &lt;https://en.wikipedia.org/wiki/Integral_element integral elements&gt;,</span>
-<span class="co">--  &lt;https://en.wikipedia.org/wiki/Integral_domain integral domains&gt;,</span>
-<span class="co">-- and the &lt;https://en.wikipedia.org/wiki/Ring_of_integers ring of integers&gt;.</span></code></pre></div>
+<h2 id="integral"><a href="https://en.wikipedia.org/wiki/Integral_element">integral</a></h2>
+<p>See also <a href="https://en.wikipedia.org/wiki/Integral_domain">Integral domain</a> and <a href="https://en.wikipedia.org/wiki/Ring_of_integers">ring of integers</a> wikipedia.</p>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Ring</span> a <span class="ot">=&gt;</span> <span class="dt">Integral</span> a <span class="kw">where</span>
 
 <span class="ot">    toInteger ::</span> a <span class="ot">-&gt;</span> <span class="dt">Integer</span>
@@ -432,10 +423,7 @@ mkQuotientField(<span class="dt">Rational</span>,<span class="dt">Integer</span>
 <span class="co">-- For example, some (all?) trig functions need to move to a separate class in order to support trig in finite fields (see &lt;https://en.wikipedia.org/wiki/Trigonometry_in_Galois_fields wikipedia&gt;).</span>
 <span class="fu">--</span>
 <span class="co">-- FIXME:</span>
-<span class="co">-- This class is misleading/incorrect for complex numbers.</span>
-<span class="fu">--</span>
-<span class="co">-- FIXME:</span>
-<span class="co">-- There&#39;s a lot more functions that need adding.</span></code></pre></div>
+<span class="co">-- This class is misleading/incorrect for complex numbers.</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ExpField</span> r <span class="ot">=&gt;</span> <span class="dt">Real</span> r <span class="kw">where</span>
 <span class="ot">    pi ::</span> r
 <span class="ot">    sin ::</span> r <span class="ot">-&gt;</span> r
@@ -510,10 +498,7 @@ mkQuotientField(<span class="dt">Rational</span>,<span class="dt">Integer</span>
 <span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a,b,c,d) <span class="fu">=</span> <span class="dt">Scalar</span> a
 <span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Scalar</span> (a <span class="ot">-&gt;</span> b) <span class="fu">=</span> <span class="dt">Scalar</span> b</code></pre></div>
 <h2 id="normed"><a href="http://ncatlab.org/nlab/show/normed%20group">normed</a></h2>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
-<span class="co">-- | FIXME: What constraint should be here? Semigroup?</span>
-<span class="fu">--</span>
-<span class="kw">class</span>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span>
     ( <span class="dt">Ord</span> (<span class="dt">Scalar</span> g)
     , <span class="dt">Scalar</span> (<span class="dt">Scalar</span> g) <span class="fu">~</span> <span class="dt">Scalar</span> g
     , <span class="dt">Ring</span> (<span class="dt">Scalar</span> g)
@@ -594,11 +579,6 @@ r <span class="fu">*.</span> v  <span class="fu">=</span> v <span class="fu">.*<
 <span class="fu">---------------------------------------</span>
 </code></pre></div>
 <h2 id="finite-module">finite module</h2>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | If our &quot;FreeModule&quot; has a finite basis, then we can:</span>
-<span class="fu">--</span>
-<span class="co">-- * index into the modules basis coefficients</span>
-<span class="fu">--</span>
-<span class="co">-- * provide a dense construction method that&#39;s a bit more convenient than &quot;fromIxList&quot;.</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span>
     ( <span class="dt">FreeModule</span> v
     ) <span class="ot">=&gt;</span> <span class="dt">FiniteModule</span> v
@@ -614,12 +594,9 @@ r <span class="fu">*.</span> v  <span class="fu">=</span> v <span class="fu">.*<
 <span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Integer</span>   <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
 <span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Float</span>     <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
 <span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Double</span>    <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
-<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Rational</span>  <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x
-
-<span class="fu">---------------------------------------</span></code></pre></div>
+<span class="kw">instance</span> <span class="dt">FiniteModule</span> <span class="dt">Rational</span>  <span class="kw">where</span> dim _ <span class="fu">=</span> <span class="dv">1</span>; unsafeToModule [x] <span class="fu">=</span> x</code></pre></div>
 <h2 id="vector-space">vector space</h2>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
-<span class="kw">class</span> (<span class="dt">FreeModule</span> v, <span class="dt">Field</span> (<span class="dt">Scalar</span> v)) <span class="ot">=&gt;</span> <span class="dt">VectorSpace</span> v <span class="kw">where</span>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">FreeModule</span> v, <span class="dt">Field</span> (<span class="dt">Scalar</span> v)) <span class="ot">=&gt;</span> <span class="dt">VectorSpace</span> v <span class="kw">where</span>
 
     <span class="kw">infixl</span> <span class="dv">7</span> <span class="fu">./</span>
 <span class="ot">    (./) ::</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v <span class="ot">-&gt;</span> v
@@ -678,12 +655,9 @@ lb2distanceUB lb p q b <span class="fu">=</span> <span class="kw">if</span> lbpq
 <span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Float</span>
 <span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Double</span>
 <span class="kw">instance</span> <span class="dt">Banach</span> <span class="dt">Rational</span></code></pre></div>
-<h2 id="hilbert">hilbert</h2>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.</span>
-<span class="fu">--</span>
-<span class="co">-- See &lt;http://en.wikipedia.org/wiki/Hilbert_space wikipedia&gt; for more details.</span>
-<span class="fu">--</span>
-<span class="co">-- FIXME:</span>
+<h2 id="hilbert"><a href="http://en.wikipedia.org/wiki/Hilbert_space">hilbert</a></h2>
+<p>Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- FIXME:</span>
 <span class="co">-- The result of a dot product must always be an ordered field.</span>
 <span class="co">-- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.</span>
 <span class="co">-- But the &quot;OrdField&quot; constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.</span>
@@ -706,15 +680,9 @@ innerProductNorm <span class="fu">=</span> undefined <span class="co">-- sqrt . 
 <span class="ot">{-# INLINE innerProductDistance #-}</span>
 <span class="ot">innerProductDistance ::</span> <span class="dt">Hilbert</span> v <span class="ot">=&gt;</span> v <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> <span class="dt">Scalar</span> v
 innerProductDistance _ _ <span class="fu">=</span> undefined <span class="co">--innerProductNorm $ v1-v2</span></code></pre></div>
-<h2 id="tensor-algebra">tensor algebra</h2>
-<p>:tada:</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="co">-- | Tensor algebras generalize the outer product of vectors to construct a matrix.</span>
-<span class="fu">--</span>
-<span class="co">-- See &lt;https://en.wikipedia.org/wiki/Tensor_algebra wikipedia&gt; for details.</span>
-<span class="fu">--</span>
-<span class="co">-- FIXME:</span>
-<span class="co">-- This needs to be replaced by the Tensor product in the Monoidal category Vect</span>
-<span class="kw">class</span>
+<h2 id="tensor-algebra"><a href="https://en.wikipedia.org/wiki/Tensor_algebra">tensor algebra</a></h2>
+<p>Tensor algebras generalize the outer product of vectors to construct a matrix.</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">class</span>
     ( <span class="dt">VectorSpace</span> v
     , <span class="dt">VectorSpace</span> (v<span class="fu">&gt;&lt;</span>v)
     , <span class="dt">Scalar</span> (v<span class="fu">&gt;&lt;</span>v) <span class="fu">~</span> <span class="dt">Scalar</span> v
