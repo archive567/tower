@@ -7,6 +7,8 @@
 [tower](https://github.com/tonyday567/tower)
 ===
 
+![](other/tower.png)
+
 This is a numeric tower built with:
 
 - boiler-plate category theory
