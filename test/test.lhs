@@ -1,13 +1,11 @@
 > {-# OPTIONS_GHC -Wall #-}
 > module Main where
 >
-> import Protolude hiding ((+),(-),(*),(/),zero,one,negate,div,mod,rem,quot)
+> import Protolude hiding ((+),(-),(*),(/),zero,one,negate,div,mod,rem,quot, Integral(..))
 > import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
 > import Test.Tasty.QuickCheck
-> -- import Test.QuickCheck as QC
 > import Tower
 >
-
 > data LawArity a =
 >     Unary (a -> Bool) |
 >     Binary (a -> a -> Bool) |
@@ -38,7 +36,6 @@
 >
 > ringLaws ::
 >     ( Eq a
->     , Tower.Monoid a
 >     , Group a
 >     , Rig a
 >     , Ring a
@@ -63,10 +60,8 @@
 >
 > integralLaws ::
 >     ( Eq a
->     , Tower.Monoid a
->     , Group a
 >     , Rig a
->     , Tower.Integral a
+>     , Integral a
 >     ) => [Law a]
 > integralLaws =
 >     [ ("integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a", Binary (\a b -> b == zero || b * (a `div` b) + (a `mod` b) == a))

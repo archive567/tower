@@ -25,16 +25,16 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 
 > module Tower (
 >       Semigroup(..)
->     , Cancellative (..)
->     , Monoid (..)
->     , Abelian
->     , Group (..)
+>     , Monoid(..)
+>     , Cancellative(..)
+>     , Group(..)
+>     , Abelian(..)
 >     , Rg(..)
 >     , Rig(..)
 >     , Rng
 >     , Ring(..)
 >     , Actor
->     , Action (..)
+>     , Action(..)
 >     , (+.)
 >     , slowFromInteger
 >     , Integral(..)
@@ -44,36 +44,36 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 >     , BoundedField(..)
 >     , infinity
 >     , negInfinity
->     , ExpRing (..)
+>     , ExpRing(..)
 >     , (^)
->     , ExpField (..)
->     , Real (..)
+>     , ExpField(..)
+>     , Real(..)
 >     , QuotientField(..)
 >     , Scalar
 >     , IsScalar
 >     , HasScalar
 >     , type (><)
->     , Module (..)
+>     , Module(..)
 >     , (*.)
->     , FreeModule (..)
->     , FiniteModule (..)
->     , VectorSpace (..)
->     , Normed (..)
+>     , FreeModule(..)
+>     , FiniteModule(..)
+>     , VectorSpace(..)
+>     , Normed(..)
 >     , abs
->     , Metric (..)
+>     , Metric(..)
 >     , isFartherThan
 >     , lb2distanceUB
->     , Banach (..)
->     , Hilbert (..)
+>     , Banach(..)
+>     , Hilbert(..)
 >     , squaredInnerProductNorm
 >     , innerProductDistance
 >     , innerProductNorm
->     , TensorAlgebra (..)
+>     , TensorAlgebra(..)
 > ) where
 
 
-> import Protolude ((.), ($), error, undefined)
 > import qualified Protolude as P
+> import Protolude ((.), ($), undefined)
 
 The main types that the tower hooks in to:
 
@@ -86,48 +86,36 @@ The main types that the tower hooks in to:
 >     Eq(..),
 >     Bool(..),
 >     Ord(..),
->     Bounded(..))
+>     Bounded(..),
+>     Semigroup(..),
+>     Monoid(..))
+>
 
-plus
----
+> instance Semigroup Int where (<>) = (P.+)
+> instance Semigroup Integer where (<>) = (P.+)
+> instance Semigroup Float where (<>) = (P.+)
+> instance Semigroup Double where (<>) = (P.+)
+> instance Semigroup Rational where (<>) = (P.+)
 
-> class Semigroup a where
->     {-# MINIMAL (+) #-}
->     infixl 6 +
->     (+) :: a -> a -> a
-
-When I first saw a monoid, my eyes glazed over the details in the midst of haskell concept overload. `mempty` was something that was empty I guessed, and m seemed to be a universal prefix shoved randomly throughout the haskell codebase.  And `mappend`, well that must be how you append lists I guess, maybe in a monad thing. And `<>` - I just saw anything wrapped in greater than less than signs as one of those operator things I'd have to look up later.
-
-It took a year before I realised that mappend was just like adding up numbers, and mempty was just like zero.  In slightly shorter time, I discovered that <> was just like +, except you couldn't say that.
-
-So, enough with the baby words and line noise, let's call them + and zero.
-
-> instance Semigroup Int      where (+) = (P.+)
-> instance Semigroup Integer  where (+) = (P.+)
-> instance Semigroup Float    where (+) = (P.+)
-> instance Semigroup Double   where (+) = (P.+)
-> instance Semigroup Rational where (+) = (P.+)
-> instance Semigroup b => Semigroup (a -> b) where
->     f+g = \a -> f a + g a
-
-zero
+monoid
 ===
 
-"I think types that lack an empty element are a misfeature.  They usually end up contaminating everything they touch, which is why semigroups forms an entire parallel ecosystem of its own." ~ [tekmo](http://haskell.1045720.n5.nabble.com/Proposal-Add-Data-Semigroup-to-base-as-a-superclass-of-Monoid-td5731447.html)
-
-The first 100,000 years of numerical analysis is on his side - positive integers lacking a zero didn't get very far.
-
-> class Semigroup g => Monoid g where
->     zero :: g
 >
-> instance Monoid Int       where zero = 0
-> instance Monoid Integer   where zero = 0
-> instance Monoid Float     where zero = 0
-> instance Monoid Double    where zero = 0
-> instance Monoid Rational  where zero = 0
->
-> instance Monoid b => Monoid (a -> b) where
->     zero = \a -> zero
+> instance Monoid Int where
+>     mempty = 0
+>     mappend = (P.+)
+> instance Monoid Integer where
+>     mempty = 0
+>     mappend = (P.+)
+> instance Monoid Float where
+>     mempty = 0
+>     mappend = (P.+)
+> instance Monoid Double where
+>     mempty = 0
+>     mappend = (P.+)
+> instance Monoid Rational where
+>     mempty = 0
+>     mappend = (P.+)
 >
 
 There is a school of thought, of course, that the choice of plus and zero is an arbitrary one, because you can wire up times and one just as nice.  Well, not sure how other people did it, but I learnt my pluses before my times.
@@ -135,9 +123,9 @@ There is a school of thought, of course, that the choice of plus and zero is an 
 [minus](http://en.wikipedia.org/wiki/Cancellative_semigroup)
 ---
 
-> class Semigroup g => Cancellative g where
+> class Semigroup a => Cancellative a where
 >     infixl 6 -
->     (-) :: g -> g -> g
+>     (-) :: a -> a -> a
 >
 > instance Cancellative Int        where (-) = (P.-)
 > instance Cancellative Integer    where (-) = (P.-)
@@ -150,9 +138,9 @@ There is a school of thought, of course, that the choice of plus and zero is an 
 group
 ---
 
-> class (Cancellative g, Monoid g) => Group g where
->     negate :: g -> g
->     negate g = zero - g
+> class (Cancellative a, Monoid a) => Group a where
+>     negate :: a -> a
+>     negate a = mempty - a
 >
 > instance Group Int
 > instance Group Integer
@@ -164,7 +152,15 @@ group
 abelian
 ---
 
-> class Semigroup m => Abelian m
+With commutivity, we switch operators to zero and +
+
+> class Monoid a => Abelian a where
+>     zero :: a
+>     zero = mempty
+>
+>     infixl 6 +
+>     (+) :: a -> a -> a
+>     (+) = mappend
 >
 > instance Abelian Int
 > instance Abelian Integer
@@ -266,7 +262,7 @@ A semigroup that acts on a type.
 > type instance Actor Float    = Float
 > type instance Actor Double   = Double
 > type instance Actor Rational = Rational
-> type instance Actor (a->b)   = a->Actor b
+> type instance Actor (a -> b)   = a -> Actor b
 
 Semigroup actions let us apply a semigroup to a set. The theory of Modules is essentially the theory of Ring actions. See [mathoverflow](http://mathoverflow.net/questions/100565/why-are-ring-actions-much-harder-to-find-than-group-actions)
 
@@ -816,15 +812,15 @@ Hilbert spaces are a natural generalization of Euclidean space that allows for i
 > -- But the "OrdField" constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.
 > -- See <http://math.stackexchange.com/questions/49348/inner-product-spaces-over-finite-fields> and <http://math.stackexchange.com/questions/47916/banach-spaces-over-fields-other-than-mathbbc> for some technical details.
 > class ( Banach v , TensorAlgebra v , Real (Scalar v), OrdField (Scalar v) ) => Hilbert v where
->     infix 8 <>
->     (<>) :: v -> v -> Scalar v
+>     infix 8 <?>
+>     (<?>) :: v -> v -> Scalar v
 >
-> instance Hilbert Float    where (<>) = (*)
-> instance Hilbert Double   where (<>) = (*)
+> instance Hilbert Float    where (<?>) = (*)
+> instance Hilbert Double   where (<?>) = (*)
 >
 > {-# INLINE squaredInnerProductNorm #-}
 > squaredInnerProductNorm :: Hilbert v => v -> Scalar v
-> squaredInnerProductNorm v = v<>v
+> squaredInnerProductNorm v = v<?>v
 >
 > {-# INLINE innerProductNorm #-}
 > innerProductNorm :: Hilbert v => v -> Scalar v

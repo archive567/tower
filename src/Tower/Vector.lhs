@@ -25,9 +25,9 @@ vectors, using a wrapped Applicative
 > -- type instance SetElem (Vector n r) b = Vector n b
 >
 > instance (Semigroup a) => Semigroup (Vector f a) where
->     (Vector a) + (Vector b) = Vector $ (+) <$> a <*> b
+>     (Vector a) <> (Vector b) = Vector $ (<>) <$> a <*> b
 > instance (Monoid a) => Monoid (Vector f a) where
->     zero = Vector $ pure zero
+>     mempty = Vector $ pure mempty
 > instance (Cancellative a) => Cancellative (Vector f a) where
 >     (Vector a) - (Vector b) = Vector $ (-) <$> a <*> b
 > instance (Group a) => Group (Vector f a) where
