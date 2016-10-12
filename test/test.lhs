@@ -1,410 +1,76 @@
 > {-# OPTIONS_GHC -Wall #-}
 > module Main where
 >
-> import qualified Protolude as P
-> import Protolude (Eq(..), Bool(..), Int, Integer, Float, Double, Rational, ($))
-> import Test.Tasty (TestTree, testGroup, defaultMain)
-> import Test.Tasty.SmallCheck as SC
-> import Test.Tasty.QuickCheck as QC
->
+> import Protolude hiding ((+),(-),(*),(/),zero,one,negate,div,mod,rem,quot)
+> import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
+> import Test.Tasty.QuickCheck
+> -- import Test.QuickCheck as QC
 > import Tower
-> 
-> scheckInt :: TestTree
-> scheckInt = testGroup "smallchecks - int"
->     [ SC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Int -> Int -> Int -> Bool)
->     , SC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Int -> Bool)
->     , SC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Int -> Bool)
->     , SC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Int -> Int -> Bool)
->     , SC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Int -> Int -> Bool)
->     , SC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Int -> Int -> Bool)
->     , SC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Int -> Bool)
->     , SC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Int -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Int -> Int -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Int -> Int -> Bool)
->     , SC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Int -> Int -> Int -> Bool)
->     , SC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Int -> Int -> Bool)
->     , SC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Int -> Bool)
->     , SC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Int -> Int -> Int -> Bool)
->     , SC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Int -> Int -> Int -> Bool)
->     , SC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Int -> Bool)
->     , SC.testProperty "integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `div` b) + (a `mod` b) == a) :: Int -> Int -> Bool)
->     , SC.testProperty "integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `quot` b) + (a `rem` b) == a) :: Int -> Int -> Bool)
->     ]
 >
-> scheckInteger :: TestTree
-> scheckInteger = testGroup "smallchecks - integer"
->     [ SC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Integer -> Integer -> Integer -> Bool)
->     , SC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Integer -> Bool)
->     , SC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Integer -> Bool)
->     , SC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Integer -> Integer -> Bool)
->     , SC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Integer -> Bool)
->     , SC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Integer -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Integer -> Integer -> Integer -> Bool)
->     , SC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Integer -> Bool)
->     , SC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Integer -> Integer -> Integer -> Bool)
->     , SC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Integer -> Integer -> Integer -> Bool)
->     , SC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Integer -> Bool)
->     , SC.testProperty "integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `div` b) + (a `mod` b) == a) :: Integer -> Integer -> Bool)
->     , SC.testProperty "integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `quot` b) + (a `rem` b) == a) :: Integer -> Integer -> Bool)
->     ]
->
-> scheckFloat :: TestTree
-> scheckFloat = testGroup "smallchecks - float"
->     [ SC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Float -> Float -> Float -> Bool)
->     , SC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Float -> Bool)
->     , SC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Float -> Bool)
->     , SC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Float -> Float -> Bool)
->     , SC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Float -> Float -> Bool)
->     , SC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Float -> Float -> Bool)
->     , SC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Float -> Bool)
->     , SC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Float -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Float -> Float -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Float -> Float -> Bool)
->     , SC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Float -> Float -> Float -> Bool)
->     , SC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Float -> Float -> Bool)
->     , SC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Float -> Bool)
->     , SC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Float -> Float -> Float -> Bool)
->     , SC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Float -> Float -> Float -> Bool)
->     , SC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Float -> Bool)
->     ]
->     
-> scheckDouble :: TestTree
-> scheckDouble = testGroup "smallchecks - double"
->     [ SC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Double -> Double -> Double -> Bool)
->     , SC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Double -> Bool)
->     , SC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Double -> Bool)
->     , SC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Double -> Double -> Bool)
->     , SC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Double -> Double -> Bool)
->     , SC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Double -> Double -> Bool)
->     , SC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Double -> Bool)
->     , SC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Double -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Double -> Double -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Double -> Double -> Bool)
->     , SC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Double -> Double -> Double -> Bool)
->     , SC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Double -> Double -> Bool)
->     , SC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Double -> Bool)
->     , SC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Double -> Double -> Double -> Bool)
->     , SC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Double -> Double -> Double -> Bool)
->     , SC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Double -> Bool)
->     ]
->     
-> scheckRational :: TestTree
-> scheckRational = testGroup "smallchecks - rational"
->     [ SC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Rational -> Rational -> Rational -> Bool)
->     , SC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Rational -> Bool)
->     , SC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Rational -> Bool)
->     , SC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Rational -> Rational -> Bool)
->     , SC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Rational -> Rational -> Bool)
->     , SC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Rational -> Rational -> Bool)
->     , SC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Rational -> Bool)
->     , SC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Rational -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Rational -> Rational -> Bool)
->     , SC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Rational -> Rational -> Bool)
->     , SC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Rational -> Rational -> Rational -> Bool)
->     , SC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Rational -> Rational -> Bool)
->     , SC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Rational -> Bool)
->     , SC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Rational -> Rational -> Rational -> Bool)
->     , SC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Rational -> Rational -> Rational -> Bool)
->     , SC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Rational -> Bool)
->     ]
 
-> qcheckInt :: TestTree
-> qcheckInt = testGroup "quickchecks - int"
->     [ QC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Int -> Int -> Int -> Bool)
->     , QC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Int -> Bool)
->     , QC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Int -> Bool)
->     , QC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Int -> Int -> Bool)
->     , QC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Int -> Int -> Bool)
->     , QC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Int -> Int -> Bool)
->     , QC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Int -> Bool)
->     , QC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Int -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Int -> Int -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Int -> Int -> Bool)
->     , QC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Int -> Int -> Int -> Bool)
->     , QC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Int -> Int -> Bool)
->     , QC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Int -> Bool)
->     , QC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Int -> Int -> Int -> Bool)
->     , QC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Int -> Int -> Int -> Bool)
->     , QC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Int -> Bool)
->     , QC.testProperty "integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `div` b) + (a `mod` b) == a) :: Int -> Int -> Bool)
->     , QC.testProperty "integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `quot` b) + (a `rem` b) == a) :: Int -> Int -> Bool)
->     ]
+> data LawArity a =
+>     Unary (a -> Bool) |
+>     Binary (a -> a -> Bool) |
+>     Ternary (a -> a -> a -> Bool) |
+>     Ornary (a -> a -> a -> a -> Bool)
 >
-> qcheckInteger :: TestTree
-> qcheckInteger = testGroup "quickchecks - integer"
->     [ QC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Integer -> Integer -> Integer -> Bool)
->     , QC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Integer -> Bool)
->     , QC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Integer -> Bool)
->     , QC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Integer -> Integer -> Bool)
->     , QC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Integer -> Bool)
->     , QC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Integer -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Integer -> Integer -> Integer -> Bool)
->     , QC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Integer -> Bool)
->     , QC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Integer -> Integer -> Integer -> Bool)
->     , QC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Integer -> Integer -> Integer -> Bool)
->     , QC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Integer -> Bool)
->     , QC.testProperty "integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `div` b) + (a `mod` b) == a) :: Integer -> Integer -> Bool)
->     , QC.testProperty "integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a" $ 
->       ((\a b -> b == zero P.|| b * (a `quot` b) + (a `rem` b) == a) :: Integer -> Integer -> Bool)
->     ]
->     
-> qcheckFloat :: TestTree
-> qcheckFloat = testGroup "quickchecks - float"
->     [ QC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Float -> Float -> Float -> Bool)
->     , QC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Float -> Bool)
->     , QC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Float -> Bool)
->     , QC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Float -> Float -> Bool)
->     , QC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Float -> Float -> Bool)
->     , QC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Float -> Float -> Bool)
->     , QC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Float -> Bool)
->     , QC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Float -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Float -> Float -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Float -> Float -> Bool)
->     , QC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Float -> Float -> Float -> Bool)
->     , QC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Float -> Float -> Bool)
->     , QC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Float -> Bool)
->     , QC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Float -> Float -> Float -> Bool)
->     , QC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Float -> Float -> Float -> Bool)
->     , QC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Float -> Bool)
->     ]
->     
-> qcheckDouble :: TestTree
-> qcheckDouble = testGroup "quickchecks - double"
->     [ QC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Double -> Double -> Double -> Bool)
->     , QC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Double -> Bool)
->     , QC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Double -> Bool)
->     , QC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Double -> Double -> Bool)
->     , QC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Double -> Double -> Bool)
->     , QC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Double -> Double -> Bool)
->     , QC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Double -> Bool)
->     , QC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Double -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Double -> Double -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Double -> Double -> Bool)
->     , QC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Double -> Double -> Double -> Bool)
->     , QC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Double -> Double -> Bool)
->     , QC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Double -> Bool)
->     , QC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Double -> Double -> Double -> Bool)
->     , QC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Double -> Double -> Double -> Bool)
->     , QC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Double -> Bool)
->     ]
->     
-> qcheckRational :: TestTree
-> qcheckRational = testGroup "quickchecks - rational"
->     [ QC.testProperty "semigroup: a + b = b + a" $
->       ((\a b c -> (a + b) + c == a + (b + c)) :: Rational -> Rational -> Rational -> Bool)
->     , QC.testProperty "monoid leftid: zero + a = a" $
->       ((\a -> zero + a == a) :: Rational -> Bool)
->     , QC.testProperty "monoid rightid: a + zero = a" $
->       ((\a -> a + zero == a) :: Rational -> Bool)
->     , QC.testProperty "cancellative rightminus1: (a + b) - b = a" $
->       ((\a b -> (a + b) - b == a) :: Rational -> Rational -> Bool)
->     , QC.testProperty "cancellative rightminus2: a + (b - b) = a" $
->       ((\a b -> a + (b - b) == a) :: Rational -> Rational -> Bool)
->     , QC.testProperty "group negateminus: a + negate b == a - b" $
->       ((\a b -> a + negate b == a - b) :: Rational -> Rational -> Bool)
->     , QC.testProperty "group leftinverse: negate a + a == zero" $
->       ((\a -> negate a + a == zero) :: Rational -> Bool)
->     , QC.testProperty "group rightinverse: a + negate a == zero" $
->       ((\a -> a + negate a == zero) :: Rational -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Rational -> Rational -> Bool)
->     , QC.testProperty "abelian commutative: a + b == b + a" $
->       ((\a b -> a + b == b + a) :: Rational -> Rational -> Bool)
->     , QC.testProperty "rg times associativity: (a * b) * c == a * (b * c)" $
->       ((\a b c -> (a * b) * c == a * (b * c)) :: Rational -> Rational -> Rational -> Bool)
->     , QC.testProperty "rg times commutivity: a * b == b * a" $
->       ((\a b -> a * b == b * a) :: Rational -> Rational -> Bool)
->     , QC.testProperty "rg annihilation: a * zero == zero" $
->       ((\a -> a * zero == zero) :: Rational -> Bool)
->     , QC.testProperty "rg left distributivity: a * (b + c) == a * b + a * c" $
->       ((\a b c -> a * (b + c) == a * b + a * c) :: Rational -> Rational -> Rational -> Bool)
->     , QC.testProperty "rg right distributivity: (a + b) * c == a * c + b * c" $
->       ((\a b c -> (a + b) * c == a * c + b * c) :: Rational -> Rational -> Rational -> Bool)
->     , QC.testProperty "rig times id: a * one == a && one * a == a" $
->       ((\a -> a * one == a P.&& one * a == a) :: Rational -> Bool)
->     ]
-
+> type Law a = (TestName, (LawArity a))
+>
+> testLawOf  :: (Arbitrary a, Show a) => [a] -> Law a -> TestTree
+> testLawOf _ (name, Unary f) = testProperty name f
+> testLawOf _ (name, Binary f) = testProperty name f
+> testLawOf _ (name, Ternary f) = testProperty name f
+> testLawOf _ (name, Ornary f) = testProperty name f
+>
 > tests :: TestTree
-> tests = testGroup "Tower"
->     [ qcheckInt
->     , qcheckInteger
->     , qcheckFloat
->     , qcheckDouble
->     , qcheckRational
->     , scheckInt
->     , scheckInteger
->     , scheckFloat
->     , scheckDouble
->     , scheckRational
+> tests = testGroup "everything" $
+>     [ testGroup "Int - Ring" $ testLawOf ([]::[Int]) <$> ringLaws
+>     , testGroup "Int - Integral" $ testLawOf ([]::[Int]) <$> integralLaws
+>     , testGroup "Integer - Ring" $ testLawOf ([]::[Integer]) <$> ringLaws
+>     , testGroup "Integer - Integral" $ testLawOf ([]::[Integer]) <$> integralLaws
+>     , testGroup "Float - Ring" $ testLawOf ([]::[Float]) <$> ringLaws
+>     , testGroup "Double - Ring" $ testLawOf ([]::[Double]) <$> ringLaws
+>     , testGroup "Rational - Ring" $ testLawOf ([]::[Rational]) <$> ringLaws
 >     ]
-> 
-> main :: P.IO ()
-> main = do
->     defaultMain tests
 >
-
-
-
-
-
+> main :: IO ()
+> main = defaultMain tests
+>
+> ringLaws ::
+>     ( Eq a
+>     , Tower.Monoid a
+>     , Group a
+>     , Rig a
+>     , Ring a
+>     ) => [Law a]
+> ringLaws =
+>     [ ("semigroup: a + b = b + a", Ternary (\a b c -> (a + b) + c == a + (b + c)))
+>     , ("monoid leftid: zero + a = a", Unary (\a -> zero + a == a))
+>     , ("monoid rightid: a + zero = a", Unary (\a -> a + zero == a))
+>     , ("cancellative rightminus1: (a + b) - b = a", Binary (\a b -> (a + b) - b == a))
+>     , ("cancellative rightminus2: a + (b - b) = a", Binary (\a b -> a + (b - b) == a))
+>     , ("group negateminus: a + negate b == a - b", Binary (\a b -> a + negate b == a - b))
+>     , ("group leftinverse: negate a + a == zero", Unary (\a -> negate a + a == zero))
+>     , ("group rightinverse: a + negate a == zero", Unary (\a -> a + negate a == zero))
+>     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
+>     , ("rg times associativity: (a * b) * c == a * (b * c)", Ternary (\a b c -> (a * b) * c == a * (b * c)))
+>     , ("rg times commutivity: a * b == b * a", Binary (\a b -> a * b == b * a))
+>     , ("rg annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
+>     , ("rg left distributivity: a * (b + c) == a * b + a * c", Ternary (\a b c -> a * (b + c) == a * b + a * c))
+>     , ("rg right distributivity: (a + b) * c == a * c + b * c", Ternary (\a b c -> (a + b) * c == a * c + b * c))
+>     , ("rig times id: a * one == a && one * a == a", Unary (\a -> a * one == a && one * a == a))
+>     ]
+>
+> integralLaws ::
+>     ( Eq a
+>     , Tower.Monoid a
+>     , Group a
+>     , Rig a
+>     , Tower.Integral a
+>     ) => [Law a]
+> integralLaws =
+>     [ ("integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a", Binary (\a b -> b == zero || b * (a `div` b) + (a `mod` b) == a))
+>     , ("integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a", Binary (\a b -> b == zero || b * (a `quot` b) + (a `rem` b) == a))
+>    ]
+>
+>

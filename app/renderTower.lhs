@@ -103,8 +103,8 @@
 
 > makeQ :: ((Renderable (Diagrams.TwoD.Text.Text Double) b), Renderable (Diagrams.Prelude.Path V2 Double) b)
 >      => [Int] -> [Text] -> [(Int,Int,Text)] -> IO (QDiagram b V2 Double Any)
-> makeQ vs ls es = do
->   gr <- DGV.layoutGraph GV.Dot (DGV.mkGraph vs es)
+> makeQ vs' ls' es' = do
+>   gr <- DGV.layoutGraph GV.Dot (DGV.mkGraph vs' es')
 >   let n = GI.labNodes gr
 >       vmap = Map.fromList [ (i, pt) | (i,(attrs,_)) <- n, GV.Pos (GV.PointPos pt) <- attrs ]
 >       v2 i = (\(GV.Point x y _ _) -> V2 x y) . fromJust $ (Map.lookup i vmap)
@@ -113,7 +113,7 @@
 >                     ]
 >       nodeRadius = minimum edgeLengths / 4
 >       drawing = DGV.drawGraph
->                      (\ i p -> place (((circle nodeRadius # lc grey) <> (Diagrams.Prelude.alignedText 0.5 1 (Text.unpack $ ls !! i)) # scale 10)) p )
+>                      (\ i p -> place (((circle nodeRadius # lc grey) <> (Diagrams.Prelude.alignedText 0 0 (Text.unpack $ ls' !! i)) # scale 10)) p )
 >                      (\ _ p₁ _ p₂ _ p -> arrowBetween' (opts p) p₁ p₂ # lc grey)
 >                      gr
 >       opts p = with P.& gaps .~ Diagrams.Prelude.local nodeRadius
