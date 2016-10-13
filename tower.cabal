@@ -33,6 +33,7 @@ library
     src
   exposed-modules:
     Tower,
+    Tower.Prelude
     Tower.Ring,
     Tower.Vector
   build-depends:

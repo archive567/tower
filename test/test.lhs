@@ -1,7 +1,7 @@
 > {-# OPTIONS_GHC -Wall #-}
 > module Main where
 >
-> import Protolude hiding ((+),(-),(*),(/),zero,one,negate,div,mod,rem,quot, Integral(..))
+> import Protolude hiding ((+),(-),(*),(/),zero,one,negate,div,mod,rem,quot, Integral(..), Semiring(..))
 > import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
 > import Test.Tasty.QuickCheck
 > import Tower
@@ -37,7 +37,6 @@
 > ringLaws ::
 >     ( Eq a
 >     , Group a
->     , Rig a
 >     , Ring a
 >     ) => [Law a]
 > ringLaws =
@@ -50,17 +49,17 @@
 >     , ("group leftinverse: negate a + a == zero", Unary (\a -> negate a + a == zero))
 >     , ("group rightinverse: a + negate a == zero", Unary (\a -> a + negate a == zero))
 >     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
->     , ("rg times associativity: (a * b) * c == a * (b * c)", Ternary (\a b c -> (a * b) * c == a * (b * c)))
->     , ("rg times commutivity: a * b == b * a", Binary (\a b -> a * b == b * a))
->     , ("rg annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
->     , ("rg left distributivity: a * (b + c) == a * b + a * c", Ternary (\a b c -> a * (b + c) == a * b + a * c))
->     , ("rg right distributivity: (a + b) * c == a * c + b * c", Ternary (\a b c -> (a + b) * c == a * c + b * c))
->     , ("rig times id: a * one == a && one * a == a", Unary (\a -> a * one == a && one * a == a))
+>     , ("times associativity: (a * b) * c == a * (b * c)", Ternary (\a b c -> (a * b) * c == a * (b * c)))
+>     , ("times commutivity: a * b == b * a", Binary (\a b -> a * b == b * a))
+>     , ("annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
+>     , ("left distributivity: a * (b + c) == a * b + a * c", Ternary (\a b c -> a * (b + c) == a * b + a * c))
+>     , ("right distributivity: (a + b) * c == a * c + b * c", Ternary (\a b c -> (a + b) * c == a * c + b * c))
+>     , ("times id: a * one == a && one * a == a", Unary (\a -> a * one == a && one * a == a))
 >     ]
 >
 > integralLaws ::
 >     ( Eq a
->     , Rig a
+>     , Semiring a
 >     , Integral a
 >     ) => [Law a]
 > integralLaws =

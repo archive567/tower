@@ -4,7 +4,7 @@
 >     where
 >
 > import Tower
-> import Protolude hiding (zero, one, (+), (-), (*), (/), negate)
+> import Protolude hiding (zero, one, (+), (-), (*), (/), negate, Semiring(..))
 >
 > -- | Every free module can be converted into a ring with this type.
 > -- Intuitively, this lets us use all our code designed for univariate operations on vectors.
@@ -35,10 +35,10 @@
 > instance FreeModule v => Rg (Componentwise v) where
 >     (Componentwise v1)*(Componentwise v2) = Componentwise $ v1.*.v2
 >
-> instance FiniteModule v => Rig (Componentwise v) where
+> instance FiniteModule v => Semiring (Componentwise v) where
 >     one = Componentwise $ ones
 >
-> instance FiniteModule v => Ring (Componentwise v)
+> instance (FiniteModule v, Group v) => Ring (Componentwise v)
 >
-> instance (FiniteModule v, VectorSpace v) => Field (Componentwise v) where
+> instance (Group v, FiniteModule v, VectorSpace v) => Field (Componentwise v) where
 >     (Componentwise v1)/(Componentwise v2) = Componentwise $ v1./.v2

@@ -25,17 +25,16 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 
 > module Tower (
 >       Semigroup(..)
+>     , Actor
+>     , Action(..)
+>     , (+.)
 >     , Monoid(..)
 >     , Cancellative(..)
 >     , Group(..)
 >     , Abelian(..)
 >     , Rg(..)
->     , Rig(..)
->     , Rng
+>     , Semiring(..)
 >     , Ring(..)
->     , Actor
->     , Action(..)
->     , (+.)
 >     , slowFromInteger
 >     , Integral(..)
 >     , fromIntegral
@@ -64,13 +63,12 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 >     , isFartherThan
 >     , lb2distanceUB
 >     , Banach(..)
->     , Hilbert(..)
 >     , squaredInnerProductNorm
 >     , innerProductDistance
 >     , innerProductNorm
 >     , TensorAlgebra(..)
+>     , Hilbert(..)
 > ) where
-
 
 > import qualified Protolude as P
 > import Protolude ((.), ($), undefined)
@@ -96,6 +94,71 @@ The main types that the tower hooks in to:
 > instance Semigroup Float where (<>) = (P.+)
 > instance Semigroup Double where (<>) = (P.+)
 > instance Semigroup Rational where (<>) = (P.+)
+
+[actions](https://en.wikipedia.org/wiki/Semigroup_action)
+---
+
+A semigroup that acts on a type.
+
+> type family Actor s
+>
+> type instance Actor Int      = Int
+> type instance Actor Integer  = Integer
+> type instance Actor Float    = Float
+> type instance Actor Double   = Double
+> type instance Actor Rational = Rational
+> type instance Actor (a -> b)   = a -> Actor b
+
+Semigroup actions let us apply a semigroup to a set. The theory of Modules is essentially the theory of Ring actions. See [mathoverflow](http://mathoverflow.net/questions/100565/why-are-ring-actions-much-harder-to-find-than-group-actions)
+
+> -- FIXME: We would like every Semigroup to act on itself, but this results in a class cycle.
+> class (Semigroup (Actor s)) => Action s where
+>     infixl 6 .+
+>     (.+) :: s -> Actor s -> s
+>
+> infixr 6 +.
+> (+.) :: Action s => Actor s -> s -> s
+> a +. s = s .+ a
+>
+> instance Action Int      where (.+) = (+)
+> instance Action Integer  where (.+) = (+)
+> instance Action Float    where (.+) = (+)
+> instance Action Double   where (.+) = (+)
+> instance Action Rational where (.+) = (+)
+> instance Action b => Action (a->b) where
+>     f.+g = \x -> f x.+g x
+
+scalar
+---
+
+> type family Scalar m
+>
+> infixr 8 ><
+> type family (><) (a::k1) (b::k2) :: *
+> type instance Int       >< Int        = Int
+> type instance Integer   >< Integer    = Integer
+> type instance Float     >< Float      = Float
+> type instance Double    >< Double     = Double
+> type instance Rational  >< Rational   = Rational
+> type instance (a -> b)  >< c          = a -> (b><c)
+>
+> -- | A synonym that covers everything we intuitively think scalar variables should have.
+> type IsScalar r = (Scalar r~r, Normed r)
+>
+> -- | A (sometimes) more convenient version of "IsScalar".
+> type HasScalar a = IsScalar (Scalar a)
+>
+> type instance Scalar Int      = Int
+> type instance Scalar Integer  = Integer
+> type instance Scalar Float    = Float
+> type instance Scalar Double   = Double
+> type instance Scalar Rational = Rational
+>
+> type instance Scalar (a,b) = Scalar a
+> type instance Scalar (a,b,c) = Scalar a
+> type instance Scalar (a,b,c,d) = Scalar a
+> type instance Scalar (a -> b) = Scalar b
+>
 
 monoid
 ===
@@ -187,31 +250,22 @@ A [Rg](http://math.stackexchange.com/questions/359437/name-for-a-semiring-minus-
 > instance Rg b => Rg (a -> b) where
 >     f*g = \a -> f a * g a
 
-one
+semiring
 ---
 
-A [Rig](http://ncatlab.org/nlab/show/rig), also known as a [semiring](https://en.wikipedia.org/wiki/Semiring) is a Rg with multiplicative identity.
+A [semiring](https://en.wikipedia.org/wiki/Semiring), also known as a [rif](http://ncatlab.org/nlab/show/rig) is a Rg with multiplicative identity.
 
-
-> class (Monoid r, Rg r) => Rig r where
+> class (Monoid r, Rg r) => Semiring r where
 >     -- | the multiplicative identity
 >     one :: r
-
-> instance Rig Int         where one = 1
-> instance Rig Integer     where one = 1
-> instance Rig Float       where one = 1
-> instance Rig Double      where one = 1
-> instance Rig Rational    where one = 1
-> instance (Rig b) => Rig (a -> b) where
->     one = \a -> one
-
-rng
----
-
-A "Ring" without identity.
-
-> type Rng r = (Rg r, Group r)
 >
+> instance Semiring Int         where one = 1
+> instance Semiring Integer     where one = 1
+> instance Semiring Float       where one = 1
+> instance Semiring Double      where one = 1
+> instance Semiring Rational    where one = 1
+> instance (Semiring b) => Semiring (a -> b) where
+>     one = \a -> one
 
 [ring](https://en.wikipedia.org/wiki/Ring_%28mathematics%29)
 ---
@@ -228,7 +282,7 @@ See [ncatlab](http://ncatlab.org/nlab/show/ring) for more details.
 > -- Currently, however, this creates a class cycle, so we can't do it.
 > -- A number of type signatures are therefore more complicated than they need to be.
 
-> class (Rng r, Rig r) => Ring r where
+> class (Semiring r, Group r) => Ring r where
 >     fromInteger :: Integer -> r
 >     fromInteger = slowFromInteger
 >
@@ -237,8 +291,8 @@ See [ncatlab](http://ncatlab.org/nlab/show/ring) for more details.
 > -- Most types should be able to compute this value significantly faster.
 > --
 > -- FIXME: replace this with peasant multiplication.
-> slowFromInteger :: forall r. (Rng r, Rig r) => Integer -> r
-> slowFromInteger i = if i>0
+> slowFromInteger :: forall r. (Group r, Semiring r) => Integer -> r
+> slowFromInteger i = if i > 0
 >     then          P.foldl' (+) zero $ P.map (P.const (one::r)) [1..        i]
 >     else negate $ P.foldl' (+) zero $ P.map (P.const (one::r)) [1.. negate i]
 >
@@ -249,39 +303,6 @@ See [ncatlab](http://ncatlab.org/nlab/show/ring) for more details.
 > instance Ring Rational    where fromInteger = P.fromInteger
 > instance Ring b => Ring (a -> b) where
 >     fromInteger i = \a -> fromInteger i
-
-[actions](https://en.wikipedia.org/wiki/Semigroup_action)
----
-
-A semigroup that acts on a type.
-
-> type family Actor s
->
-> type instance Actor Int      = Int
-> type instance Actor Integer  = Integer
-> type instance Actor Float    = Float
-> type instance Actor Double   = Double
-> type instance Actor Rational = Rational
-> type instance Actor (a -> b)   = a -> Actor b
-
-Semigroup actions let us apply a semigroup to a set. The theory of Modules is essentially the theory of Ring actions. See [mathoverflow](http://mathoverflow.net/questions/100565/why-are-ring-actions-much-harder-to-find-than-group-actions)
-
-> -- FIXME: We would like every Semigroup to act on itself, but this results in a class cycle.
-> class (Semigroup (Actor s)) => Action s where
->     infixl 6 .+
->     (.+) :: s -> Actor s -> s
->
-> infixr 6 +.
-> (+.) :: Action s => Actor s -> s -> s
-> a +. s = s .+ a
->
-> instance Action Int      where (.+) = (+)
-> instance Action Integer  where (.+) = (+)
-> instance Action Float    where (.+) = (+)
-> instance Action Double   where (.+) = (+)
-> instance Action Rational where (.+) = (+)
-> instance Action b => Action (a->b) where
->     f.+g = \x -> f x.+g x
 
 [integral](https://en.wikipedia.org/wiki/Integral_element)
 ---
@@ -576,45 +597,11 @@ from subhask:
 >     atanh = P.atanh
 >
 
-scalar
----
-
-> type family Scalar m
->
-> infixr 8 ><
-> type family (><) (a::k1) (b::k2) :: *
-> type instance Int       >< Int        = Int
-> type instance Integer   >< Integer    = Integer
-> type instance Float     >< Float      = Float
-> type instance Double    >< Double     = Double
-> type instance Rational  >< Rational   = Rational
-> type instance (a -> b)  >< c          = a -> (b><c)
->
-> -- | A synonym that covers everything we intuitively think scalar variables should have.
-> type IsScalar r = (Ring r, Ord r, Scalar r~r, Normed r, r~(r><r))
->
-> -- | A (sometimes) more convenient version of "IsScalar".
-> type HasScalar a = IsScalar (Scalar a)
->
-> type instance Scalar Int      = Int
-> type instance Scalar Integer  = Integer
-> type instance Scalar Float    = Float
-> type instance Scalar Double   = Double
-> type instance Scalar Rational = Rational
->
-> type instance Scalar (a,b) = Scalar a
-> type instance Scalar (a,b,c) = Scalar a
-> type instance Scalar (a,b,c,d) = Scalar a
-> type instance Scalar (a -> b) = Scalar b
->
-
 [normed](http://ncatlab.org/nlab/show/normed%20group)
 ---
 
 > class
->     ( Ord (Scalar g)
->     , Scalar (Scalar g) ~ Scalar g
->     , Ring (Scalar g)
+>     ( Ring (Scalar g)
 >     ) => Normed g where
 >     size :: g -> Scalar g
 >
@@ -642,9 +629,6 @@ Scalar multiplication
 >
 > class
 >     ( Abelian v
->     , Group v
->     , HasScalar v
->     , v ~ (v><Scalar v)
 >     ) => Module v
 >         where
 >
@@ -755,6 +739,7 @@ Metric spaces give us the most intuitive notion of distance between objects.
 > class
 >     ( HasScalar v
 >     , Eq v
+>     , Ord v
 >     , (Scalar v) ~ v
 >     ) => Metric v
 >         where
@@ -790,45 +775,15 @@ Metric spaces give us the most intuitive notion of distance between objects.
 [banach](http://en.wikipedia.org/wiki/Banach_space)
 ---
 
-A Banach space is a Vector Space equipped with a compatible Norm and Metric.
+A Banach space is a Vector Space equipped with a compatible Norm.
 
-> class (VectorSpace v, Normed v, Metric v) => Banach v where
+> class (VectorSpace v, Normed v) => Banach v where
 >     normalize :: v -> v
 >     normalize v = v ./ size v
 >
 > instance Banach Float
 > instance Banach Double
 > instance Banach Rational
->
-
-[hilbert](http://en.wikipedia.org/wiki/Hilbert_space)
----
-
-Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.
-
-> -- FIXME:
-> -- The result of a dot product must always be an ordered field.
-> -- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.
-> -- But the "OrdField" constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.
-> -- See <http://math.stackexchange.com/questions/49348/inner-product-spaces-over-finite-fields> and <http://math.stackexchange.com/questions/47916/banach-spaces-over-fields-other-than-mathbbc> for some technical details.
-> class ( Banach v , TensorAlgebra v , Real (Scalar v), OrdField (Scalar v) ) => Hilbert v where
->     infix 8 <?>
->     (<?>) :: v -> v -> Scalar v
->
-> instance Hilbert Float    where (<?>) = (*)
-> instance Hilbert Double   where (<?>) = (*)
->
-> {-# INLINE squaredInnerProductNorm #-}
-> squaredInnerProductNorm :: Hilbert v => v -> Scalar v
-> squaredInnerProductNorm v = v<?>v
->
-> {-# INLINE innerProductNorm #-}
-> innerProductNorm :: Hilbert v => v -> Scalar v
-> innerProductNorm = undefined -- sqrt . squaredInnerProductNorm
->
-> {-# INLINE innerProductDistance #-}
-> innerProductDistance :: Hilbert v => v -> v -> Scalar v
-> innerProductDistance _ _ = undefined --innerProductNorm $ v1-v2
 >
 
 [tensor algebra](https://en.wikipedia.org/wiki/Tensor_algebra)
@@ -857,4 +812,34 @@ Tensor algebras generalize the outer product of vectors to construct a matrix.
 > instance TensorAlgebra Float    where  (><) = (*); vXm = (*);  mXv = (*)
 > instance TensorAlgebra Double   where  (><) = (*); vXm = (*);  mXv = (*)
 > instance TensorAlgebra Rational where  (><) = (*); vXm = (*);  mXv = (*)
+>
+
+[hilbert](http://en.wikipedia.org/wiki/Hilbert_space)
+---
+
+Hilbert spaces are a natural generalization of Euclidean space that allows for infinite dimension.
+
+> -- FIXME:
+> -- The result of a dot product must always be an ordered field.
+> -- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.
+> -- But the "OrdField" constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.
+> -- See <http://math.stackexchange.com/questions/49348/inner-product-spaces-over-finite-fields> and <http://math.stackexchange.com/questions/47916/banach-spaces-over-fields-other-than-mathbbc> for some technical details.
+> class ( Banach v , Cancellative v, TensorAlgebra v , Real (Scalar v), OrdField (Scalar v) ) => Hilbert v where
+>     infix 8 <?>
+>     (<?>) :: v -> v -> Scalar v
+>
+> instance Hilbert Float    where (<?>) = (*)
+> instance Hilbert Double   where (<?>) = (*)
+>
+> {-# INLINE squaredInnerProductNorm #-}
+> squaredInnerProductNorm :: Hilbert v => v -> Scalar v
+> squaredInnerProductNorm v = v<?>v
+>
+> {-# INLINE innerProductNorm #-}
+> innerProductNorm :: Hilbert v => v -> Scalar v
+> innerProductNorm = sqrt . squaredInnerProductNorm
+>
+> {-# INLINE innerProductDistance #-}
+> innerProductDistance :: Hilbert v => v -> v -> Scalar v
+> innerProductDistance v1 v2 = innerProductNorm $ v1-v2
 >

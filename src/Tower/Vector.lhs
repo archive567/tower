@@ -15,7 +15,7 @@ vectors
 ---
 
 vectors, using a wrapped Applicative
-
+ 
 > newtype Vector f a = Vector { unvec :: P.Applicative f => f a}
 > 
 > type instance Scalar (Vector f a) = Scalar a
@@ -35,7 +35,7 @@ vectors, using a wrapped Applicative
 > instance (Abelian a) => Abelian (Vector f a)
 > instance (Rg a) => Rg (Vector f a) where
 >     (Vector a) * (Vector b) = Vector $ (*) <$> a <*> b
-> instance (Rig a) => Rig (Vector f a) where
+> instance (Semiring a) => Semiring (Vector f a) where
 >     one = Vector $ pure one
 > instance (Ring a) => Ring (Vector f a) where
 >     fromInteger a = Vector $ pure (fromInteger a)
