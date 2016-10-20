@@ -6,6 +6,7 @@
 >     , (-)
 >     , (*)
 >     , (/)
+>     , cancel
 >     , zero
 >     , one
 >     , negate

@@ -36,15 +36,14 @@
 >
 > ringLaws ::
 >     ( Eq a
->     , Group a
 >     , Ring a
 >     ) => [Law a]
 > ringLaws =
 >     [ ("semigroup: a + b = b + a", Ternary (\a b c -> (a + b) + c == a + (b + c)))
 >     , ("monoid leftid: zero + a = a", Unary (\a -> zero + a == a))
 >     , ("monoid rightid: a + zero = a", Unary (\a -> a + zero == a))
->     , ("cancellative rightminus1: (a + b) - b = a", Binary (\a b -> (a + b) - b == a))
->     , ("cancellative rightminus2: a + (b - b) = a", Binary (\a b -> a + (b - b) == a))
+>     , ("group rightminus1: (a + b) - b = a", Binary (\a b -> (a + b) - b == a))
+>     , ("group rightminus2: a + (b - b) = a", Binary (\a b -> a + (b - b) == a))
 >     , ("group negateminus: a + negate b == a - b", Binary (\a b -> a + negate b == a - b))
 >     , ("group leftinverse: negate a + a == zero", Unary (\a -> negate a + a == zero))
 >     , ("group rightinverse: a + negate a == zero", Unary (\a -> a + negate a == zero))

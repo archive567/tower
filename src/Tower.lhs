@@ -32,7 +32,7 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 >     , Cancellative(..)
 >     , Group(..)
 >     , Abelian(..)
->     , Rg(..)
+>     , Times(..)
 >     , Semiring(..)
 >     , Ring(..)
 >     , slowFromInteger
@@ -71,7 +71,7 @@ Much of this class list is the same as [subhask](https://github.com/mikeizbicki/
 > ) where
 
 > import qualified Protolude as P
-> import Protolude ((.), ($), undefined)
+> import Protolude ((.), ($), undefined, Maybe(..))
 
 The main types that the tower hooks in to:
 
@@ -183,33 +183,34 @@ monoid
 
 There is a school of thought, of course, that the choice of plus and zero is an arbitrary one, because you can wire up times and one just as nice.  Well, not sure how other people did it, but I learnt my pluses before my times.
 
-[minus](http://en.wikipedia.org/wiki/Cancellative_semigroup)
+[cancel](http://en.wikipedia.org/wiki/Cancellative_semigroup)
 ---
 
 > class Semigroup a => Cancellative a where
->     infixl 6 -
->     (-) :: a -> a -> a
+>     cancel :: a -> a -> Maybe a
 >
-> instance Cancellative Int        where (-) = (P.-)
-> instance Cancellative Integer    where (-) = (P.-)
-> instance Cancellative Float      where (-) = (P.-)
-> instance Cancellative Double     where (-) = (P.-)
-> instance Cancellative Rational   where (-) = (P.-)
-> instance Cancellative b => Cancellative (a -> b) where
->     f-g = \a -> f a - g a
+> instance Cancellative Int        where cancel a b = Just (a P.- b)
+> instance Cancellative Integer    where cancel a b = Just (a P.- b)
+> instance Cancellative Float      where cancel a b = Just (a P.- b)
+> instance Cancellative Double     where cancel a b = Just (a P.- b)
+> instance Cancellative Rational   where cancel a b = Just (a P.- b)
+> instance Cancellative b => Cancellative (a -> b)
 
 group
 ---
 
 > class (Cancellative a, Monoid a) => Group a where
+>     infixl 6 -
+>     (-) :: a -> a -> a
+>
 >     negate :: a -> a
 >     negate a = mempty - a
 >
-> instance Group Int
-> instance Group Integer
-> instance Group Float
-> instance Group Double
-> instance Group Rational
+> instance Group Int where (-) = (P.-)
+> instance Group Integer where (-) = (P.-)
+> instance Group Float where (-) = (P.-)
+> instance Group Double where (-) = (P.-)
+> instance Group Rational where (-) = (P.-)
 > instance Group b => Group (a -> b)
 
 abelian
@@ -238,16 +239,16 @@ times
 
 A [Rg](http://math.stackexchange.com/questions/359437/name-for-a-semiring-minus-multiplicative-identity-requirement)
 
-> class (Abelian r, Monoid r) => Rg r where
+> class (Abelian r, Monoid r) => Times r where
 >     infixl 7 *
 >     (*) :: r -> r -> r
 >
-> instance Rg Int         where (*) = (P.*)
-> instance Rg Integer     where (*) = (P.*)
-> instance Rg Float       where (*) = (P.*)
-> instance Rg Double      where (*) = (P.*)
-> instance Rg Rational    where (*) = (P.*)
-> instance Rg b => Rg (a -> b) where
+> instance Times Int         where (*) = (P.*)
+> instance Times Integer     where (*) = (P.*)
+> instance Times Float       where (*) = (P.*)
+> instance Times Double      where (*) = (P.*)
+> instance Times Rational    where (*) = (P.*)
+> instance Times b => Times (a -> b) where
 >     f*g = \a -> f a * g a
 
 semiring
@@ -255,7 +256,7 @@ semiring
 
 A [semiring](https://en.wikipedia.org/wiki/Semiring), also known as a [rif](http://ncatlab.org/nlab/show/rig) is a Rg with multiplicative identity.
 
-> class (Monoid r, Rg r) => Semiring r where
+> class (Monoid r, Times r) => Semiring r where
 >     -- | the multiplicative identity
 >     one :: r
 >
@@ -395,10 +396,33 @@ Fields are Rings with a multiplicative inverse.
 > instance Field b => Field (a -> b) where
 >     reciprocal f = reciprocal . f
 
+[normed](http://ncatlab.org/nlab/show/normed%20group)
+---
+
+> class
+>     ( Ring (Scalar g)
+>     ) => Normed g where
+>     size :: g -> Scalar g
+>
+>     sizeSquared :: g -> Scalar g
+>     sizeSquared g = s*s
+>         where
+>             s = size g
+>
+> abs :: (IsScalar g) => g -> g
+> abs = size
+>
+> instance Normed Int       where size = P.abs
+> instance Normed Integer   where size = P.abs
+> instance Normed Float     where size = P.abs
+> instance Normed Double    where size = P.abs
+> instance Normed Rational  where size = P.abs
+>
+
 [ordered fields](http://en.wikipedia.org/wiki/Ordered_field)
 ---
 
-> class (Field r, Ord r, Normed r, IsScalar r) => OrdField r
+> class (Field r, Ord r, Normed r) => OrdField r
 >
 > instance OrdField Float
 > instance OrdField Double
@@ -596,30 +620,6 @@ from subhask:
 >     acosh = P.acosh
 >     atanh = P.atanh
 >
-
-[normed](http://ncatlab.org/nlab/show/normed%20group)
----
-
-> class
->     ( Ring (Scalar g)
->     ) => Normed g where
->     size :: g -> Scalar g
->
->     sizeSquared :: g -> Scalar g
->     sizeSquared g = s*s
->         where
->             s = size g
->
-> abs :: IsScalar g => g -> g
-> abs = size
->
-> instance Normed Int       where size = P.abs
-> instance Normed Integer   where size = P.abs
-> instance Normed Float     where size = P.abs
-> instance Normed Double    where size = P.abs
-> instance Normed Rational  where size = P.abs
->
-
 
 [module](https://en.wikipedia.org/wiki/Module_(mathematics))
 ---
@@ -824,7 +824,7 @@ Hilbert spaces are a natural generalization of Euclidean space that allows for i
 > -- This is true even when the Hilbert space is over a non-ordered field like the complex numbers.
 > -- But the "OrdField" constraint currently prevents us from doing scalar multiplication on Complex Hilbert spaces.
 > -- See <http://math.stackexchange.com/questions/49348/inner-product-spaces-over-finite-fields> and <http://math.stackexchange.com/questions/47916/banach-spaces-over-fields-other-than-mathbbc> for some technical details.
-> class ( Banach v , Cancellative v, TensorAlgebra v , Real (Scalar v), OrdField (Scalar v) ) => Hilbert v where
+> class ( Banach v , Group v, TensorAlgebra v , Real (Scalar v), OrdField (Scalar v) ) => Hilbert v where
 >     infix 8 <?>
 >     (<?>) :: v -> v -> Scalar v
 >

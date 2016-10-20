@@ -28,12 +28,12 @@ vectors, using a wrapped Applicative
 >     (Vector a) <> (Vector b) = Vector $ (<>) <$> a <*> b
 > instance (Monoid a) => Monoid (Vector f a) where
 >     mempty = Vector $ pure mempty
-> instance (Cancellative a) => Cancellative (Vector f a) where
->     (Vector a) - (Vector b) = Vector $ (-) <$> a <*> b
+> instance (Cancellative a) => Cancellative (Vector f a)
 > instance (Group a) => Group (Vector f a) where
+>     (Vector a) - (Vector b) = Vector $ (-) <$> a <*> b
 >     negate (Vector a) = Vector $ negate <$> a
 > instance (Abelian a) => Abelian (Vector f a)
-> instance (Rg a) => Rg (Vector f a) where
+> instance (Times a) => Times (Vector f a) where
 >     (Vector a) * (Vector b) = Vector $ (*) <$> a <*> b
 > instance (Semiring a) => Semiring (Vector f a) where
 >     one = Vector $ pure one
