@@ -142,6 +142,8 @@ executable renderTower
   build-depends:
     base >= 4.7 && < 5,
     tower,
+    primitive,
+    foldl,
     containers,
     diagrams,
     diagrams-core,
