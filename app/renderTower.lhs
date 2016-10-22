@@ -4,17 +4,17 @@
 > {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 >
 > import Protolude as P
-> import Data.Maybe (fromJust)
+> -- import Data.Maybe (fromJust)
 > import Diagrams.Prelude hiding ((<>))
 > import Diagrams.TwoD()
 > import qualified Diagrams.TwoD.GraphViz as DGV
 > import qualified Data.GraphViz as GV
-> import qualified Data.GraphViz.Attributes.Complete as GV
+> -- import qualified Data.GraphViz.Attributes.Complete as GV
 > import qualified Diagrams.TwoD.Text
-> import qualified Data.Graph.Inductive.Graph as GI
+> -- import qualified Data.Graph.Inductive.Graph as GI
 > import qualified Data.Text as Text
 > import qualified Data.Map as Map
-> import qualified Data.Graph.Inductive.PatriciaTree as FGL
+> -- import qualified Data.Graph.Inductive.PatriciaTree as FGL
 > import Control.Monad.Primitive (unsafeInlineIO)
 > import qualified Control.Foldl as L
 >
@@ -120,15 +120,15 @@
 > boxes ps =
 >        zipWith (\p c -> place
 >                  ((unitSquare #
->                   scaleX 60.0 #
->                   scaleY 30.0 <>
->                   (Diagrams.Prelude.text (Text.unpack $ show c) # scale 10.0))
+>                   scaleX 50.0 #
+>                   scaleY 25.0 #
+>                   lc (sRGB 0.33 0.33 0.33) . opacity 0.3 <>
+>                   (Diagrams.Prelude.text (Text.unpack $ show c) # scale 5.0))
 >                    # named c) p)
 >        (Map.elems ps :: [P2 Double])
 >        (Map.keys ps)
 >
-> edge :: ((Renderable (Path V2 Double) b),
->             Renderable (Diagrams.TwoD.Text.Text Double) b) => Dependency -> QDiagram b V2 Double Any -> QDiagram b V2 Double Any
+> edge :: (Renderable (Path V2 Double) b) => Dependency -> QDiagram b V2 Double Any -> QDiagram b V2 Double Any
 > edge (Dependency to from Nothing) =
 >     connectOutside'
 >     (headStyle %~ fc (sRGB 0.33 0.33 0.33) . opacity 0.3 $
@@ -197,4 +197,6 @@
 > main :: IO ()
 > main = do
 >   let g = makeGraph (Config 3 30 10 1) classes dependencies
->   fileSvg "other/tower.svg" (400,600) (g :: QDiagram SVG V2 Double Any)
+>   let g' = makeGraph (Config 3 30 10 1) classes dependencies
+>   fileSvg "other/tower.svg" (600,600) (g :: QDiagram SVG V2 Double Any)
+>   filePng "other/tower.png" (600,600) (g' :: QDiagram Rasterific V2 Double Any)
