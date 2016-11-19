@@ -2,7 +2,9 @@
 > module Tower.Prelude (module X) where
 >
 > import Protolude as X hiding
->     ( (+)
+>     ( Semigroup (..)
+>     , Monoid(..)
+>     , (+)
 >     , (-)
 >     , (*)
 >     , (/)
@@ -50,3 +52,4 @@
 >     , infinity
 >     )
 > import Tower as X
+> import Tower.Double as X

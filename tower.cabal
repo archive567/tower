@@ -34,7 +34,8 @@ library
   exposed-modules:
     Tower,
     Tower.Prelude
-    Tower.Vector
+    Tower.Vector,
+    Tower.Double
   build-depends:
     base >= 4.7 && < 5,
     protolude
