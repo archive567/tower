@@ -35,10 +35,15 @@ library
     Tower,
     Tower.Prelude
     Tower.Vector,
-    Tower.Double
+    Tower.UVector,
+    Tower.Double,
+    Tower.Float,
+    Tower.Int
   build-depends:
     base >= 4.7 && < 5,
-    protolude
+    protolude,
+    vector,
+    QuickCheck
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
@@ -81,7 +86,7 @@ test-suite test
   hs-source-dirs:
     test
   main-is:
-    test.lhs
+    test.hs
   build-depends:
     base >= 4.7 && < 5,
     protolude,
@@ -93,69 +98,6 @@ test-suite test
     QuickCheck,
     tasty-quickcheck,
     tower
-  default-extensions:
-    NoImplicitPrelude,
-    UnicodeSyntax,
-    BangPatterns,
-    BinaryLiterals,
-    DeriveFoldable,
-    DeriveFunctor,
-    DeriveGeneric,
-    DeriveTraversable,
-    DisambiguateRecordFields,
-    EmptyCase,
-    FlexibleContexts,
-    FlexibleInstances,
-    FunctionalDependencies,
-    GADTSyntax,
-    InstanceSigs,
-    KindSignatures,
-    LambdaCase,
-    MonadComprehensions,
-    MultiParamTypeClasses,
-    MultiWayIf,
-    NegativeLiterals,
-    OverloadedStrings,
-    ParallelListComp,
-    PartialTypeSignatures,
-    PatternSynonyms,
-    RankNTypes,
-    RecordWildCards,
-    RecursiveDo,
-    ScopedTypeVariables,
-    TupleSections,
-    TypeFamilies,
-    TypeOperators
-
-executable renderTower
-  default-language:
-    Haskell2010
-  ghc-options:
-    -funbox-strict-fields
-    -fforce-recomp
-    -threaded
-    -rtsopts
-    -with-rtsopts=-N
-  hs-source-dirs:
-    app
-  main-is:
-    renderTower.lhs
-  build-depends:
-    base >= 4.7 && < 5,
-    tower,
-    primitive,
-    foldl,
-    containers,
-    diagrams,
-    diagrams-core,
-    diagrams-lib,
-    diagrams-rasterific,
-    diagrams-svg,
-    diagrams-graphviz,
-    graphviz,
-    fgl,
-    protolude,
-    text
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
