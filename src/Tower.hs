@@ -83,6 +83,9 @@ class (
   , Multiplicative a
   ) => Distributive a
 
+-- a semiring doesn't need to be multiplicative commutative, so distributive doesn't quite fit as a parent
+class (Additive a, MultiplicativeMonoid a) => Semiring a
+
 class (Additive a, AdditiveGroup a, Multiplicative a, Field a) => Ring a
 
 class (
