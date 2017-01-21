@@ -2,7 +2,80 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE PolyKinds #-}
 
-module Tower where
+module Tower (
+    -- * Magma structure
+    Magma(..)
+  , Unital(..)
+  , Associative(..)
+  , Commutative(..)
+  , Invertible(..)
+  , Idempotent(..)
+  , Homomorphic(..)
+  , Semigroup(..)
+  , Monoid(..)
+  , Group(..)
+    -- * Additive Structure
+  , AdditiveMagma(..)
+  , AdditiveUnital(..)
+  , AdditiveAssociative(..)
+  , AdditiveCommutative(..)
+  , AdditiveInvertible(..)
+  , AdditiveIdempotent(..)
+  , AdditiveHomomorphic(..)
+  , AdditiveSemigroup(..)
+  , AdditiveMonoid(..)
+  , AdditiveGroup(..)
+  , (+)
+  , (-)
+    -- * Multiplicative Structure
+  , MultiplicativeMagma(..)
+  , MultiplicativeUnital(..)
+  , MultiplicativeAssociative(..)
+  , MultiplicativeCommutative(..)
+  , MultiplicativeInvertible(..)
+  , MultiplicativeIdempotent(..)
+  , MultiplicativeHomomorphic(..)
+  , MultiplicativeSemigroup(..)
+  , MultiplicativeMonoid(..)
+  , Field(..)
+  , (*)
+  , (/)
+    -- * Distributive
+  , Distributive(..)
+    -- * Ring
+  , Semiring(..)
+  , Ring(..)
+    -- * Module Structure
+  , AdditiveModule(..)
+  , (.+)
+  , (.-)
+  , (.+.)
+  , (.-.)
+  , MultiplicativeModule(..)
+  , (.*)
+  , (./)
+  , (.*.)
+  , (./.)
+    -- * Integral
+  , Integral(..)
+    -- * Metric
+  , Metric(..)
+  , Normed(..)
+  , abs
+  , Banach(..)
+  , BoundedField(..)
+  , infinity
+    -- * Exponential
+  , ExpRing(..)
+  , (^)
+  , ExpField(..)
+    -- * Tensor Algebra
+  , Hilbert(..)
+  , TensorAlgebra(..)
+  , squaredInnerProductNorm
+  , innerProductNorm
+  , innerProductDistance
+  ) where
 
 import qualified Protolude as P
 import Protolude (
@@ -17,7 +90,14 @@ import Protolude (
     Bounded(..),
     (.), ($), undefined, Maybe(..))
 
--- | Magma structure
+-- * Magma structure
+
+-- ![](other/tower-dot.svg)
+
+
+-- | Magma
+-- <https://en.wikipedia.org/wiki/Magma_(algebra)>
+-- 
 class Magma a where magma :: a -> a -> a
 class Magma a => Unital a where unit :: a
 class Magma a => Associative a
