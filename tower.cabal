@@ -3,9 +3,23 @@ name:
 version:
   0.1.0.0
 synopsis:
-  See src/Tower.lhs
+  A numeric tower
 description:
-  See src/Tower.lhs
+  This package is an experiment in constructing a principled numeric tower, starting with magmas and proceeding to tensor algebra.
+  .
+  Performance testing, extended notes and examples can be found in <https://github.com/tonyday567/tower-dev tower-dev>.
+  .
+  The heirarchical tower looks something like:
+  .
+  .
+  <<http://tonyday567.github.io/other/tower.svg>>
+  .
+  To library uses protolude as a backend prelude. To use the library:
+  . 
+  > import Tower.Prelude
+  .
+  The library uses and exports `Monoidal` rather than `Monoid`, and omits a Semigroup class in order to fit in with existing base.
+  . 
 category:
   mathematics
 homepage:
@@ -32,13 +46,10 @@ library
   hs-source-dirs:
     src
   exposed-modules:
-    Tower,
-    Tower.Prelude
-    Tower.Vector,
-    Tower.UVector,
-    Tower.Double,
-    Tower.Float,
-    Tower.Int
+    Tower.Algebra,
+    Tower.Prelude,
+    Tower.VectorA,
+    Tower.VectorU
   build-depends:
     base >= 4.7 && < 5,
     protolude,

@@ -6,11 +6,9 @@ module Main where
 import Protolude hiding ((+),(-),(*),(/),zero,one,negate,recip,div,mod,rem,quot, Integral(..))
 import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
 import Test.Tasty.QuickCheck
-import Tower
-import Tower.Double()
-import Tower.Float()
-import Tower.Int()
+import Tower.Algebra
 import Tower.UVector
+import Tower.Vector
 
 data LawArity a =
     Unary (a -> Bool) |
@@ -36,9 +34,8 @@ tests = testGroup "everything"
     , testGroup "Float - Additive" $ testLawOf ([]::[Float]) <$> additiveLaws
     , testGroup "Float - Additive Group" $ testLawOf ([]::[Float]) <$> additiveGroupLaws
     , testGroup "Float - Multiplicative" $ testLawOf ([]::[Float]) <$> multiplicativeLaws
-    , testGroup "Float - Field" $ testLawOf ([]::[Float]) <$> fieldLaws
+    , testGroup "Float - MultiplicativeGroup" $ testLawOf ([]::[Float]) <$> fieldLaws
     , testGroup "Float - Distributive" $ testLawOf ([]::[Float]) <$> distributiveLaws
-    , testGroup "Float - Ring" $ testLawOf ([]::[Float]) <$> ringLaws
     , testGroup "UVector 5 Int - Additive" $ testLawOf ([]::[UVector 5 Int]) <$> additiveLaws
     , testGroup "UVector 5 Int - Additive Group" $ testLawOf ([]::[UVector 5 Int]) <$> additiveGroupLaws
     , testGroup "UVector 5 Int - Multiplicative" $ testLawOf ([]::[UVector 5 Int]) <$> multiplicativeLaws
@@ -47,9 +44,12 @@ tests = testGroup "everything"
     , testGroup "UVector 5 Float - Additive" $ testLawOf ([]::[UVector 5 Float]) <$> additiveLaws
     , testGroup "UVector 5 Float - Additive Group" $ testLawOf ([]::[UVector 5 Float]) <$> additiveGroupLaws
     , testGroup "UVector 5 Float - Multiplicative" $ testLawOf ([]::[UVector 5 Float]) <$> multiplicativeLaws
-    , testGroup "UVector 5 Float - Field" $ testLawOf ([]::[UVector 5 Float]) <$> fieldLaws
+    , testGroup "UVector 5 Float - MultiplicativeGroup" $ testLawOf ([]::[UVector 5 Float]) <$> fieldLaws
     , testGroup "UVector 5 Float - Distributive" $ testLawOf ([]::[UVector 5 Float]) <$> distributiveLaws
-    , testGroup "UVector 5 Float - Ring" $ testLawOf ([]::[UVector 5 Float]) <$> ringLaws
+    , testGroup "Vector Int - Additive" $ testLawOf ([]::[Vector 5 [] Int]) <$> additiveLaws
+    , testGroup "Vector Int - Additive Group" $ testLawOf ([]::[Vector 5 [] Int]) <$> additiveGroupLaws
+    , testGroup "Vector Int - Multiplicative" $ testLawOf ([]::[Vector 5 [] Int]) <$> multiplicativeLaws
+    , testGroup "Vector Int - Distributive" $ testLawOf ([]::[Vector 5 [] Int]) <$> distributiveLaws
     ]
 
 main :: IO ()
@@ -73,8 +73,7 @@ additiveGroupLaws ::
 additiveGroupLaws =
     [ ("minus: a - a = zero", Unary (\a -> (a - a) == zero))
     , ("negate minus: negate a == zero - a", Unary (\a -> negate a == zero - a))
-    , ("negate left: negate a + a == zero", Unary (\a -> negate a + a == zero))
-    , ("negate right: a + negate a == zero", Unary (\a -> a + negate a == zero))
+    , ("negate cancel: negate a + a == zero", Unary (\a -> negate a + a == zero))
     ]
 
 multiplicativeLaws ::
@@ -90,7 +89,7 @@ multiplicativeLaws =
 
 fieldLaws ::
     ( Eq a
-    , Field a
+    , MultiplicativeGroup a
     ) => [Law a]
 fieldLaws =
     [ ("divide: a / a = one", Unary (\a -> (a / a) == one))
@@ -109,14 +108,6 @@ distributiveLaws =
     , ("right distributivity: (a + b) * c == a * c + b * c", Ternary (\a b c -> (a + b) * c == a * c + b * c))
     ]
 
-ringLaws ::
-    ( Eq a
-    , Ring a
-    ) => [Law a]
-ringLaws =
-    [
-    ]
-
 integralLaws ::
     ( Eq a
     , Integral a
@@ -127,7 +118,7 @@ integralLaws =
    ]
 
 todoLaws ::
-    ( Eq a
+    ( -- Eq a
     -- , AdditiveModule s a
     ) => [Law a]
 todoLaws =
