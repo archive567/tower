@@ -7,14 +7,15 @@ import Protolude hiding ((+),(-),(*),(/),zero,one,negate,recip,div,mod,rem,quot,
 import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
 import Test.Tasty.QuickCheck
 import Tower.Algebra
-import Tower.UVector
-import Tower.Vector
+import Tower.VectorU
+import Tower.VectorA
 
 data LawArity a =
     Unary (a -> Bool) |
     Binary (a -> a -> Bool) |
     Ternary (a -> a -> a -> Bool) |
-    Ornary (a -> a -> a -> a -> Bool)
+    Ornary (a -> a -> a -> a -> Bool) |
+    Uniary (a -> Property)
 
 type Law a = (TestName, LawArity a)
 
@@ -23,6 +24,7 @@ testLawOf _ (name, Unary f) = testProperty name f
 testLawOf _ (name, Binary f) = testProperty name f
 testLawOf _ (name, Ternary f) = testProperty name f
 testLawOf _ (name, Ornary f) = testProperty name f
+testLawOf _ (name, Uniary f) = testProperty name f
 
 tests :: TestTree
 tests = testGroup "everything"
@@ -31,25 +33,25 @@ tests = testGroup "everything"
     , testGroup "Int - Multiplicative" $ testLawOf ([]::[Int]) <$> multiplicativeLaws
     , testGroup "Int - Distributive" $ testLawOf ([]::[Int]) <$> distributiveLaws
     , testGroup "Int - Integral" $ testLawOf ([]::[Int]) <$> integralLaws
-    , testGroup "Float - Additive" $ testLawOf ([]::[Float]) <$> additiveLaws
+    , testGroup "Float - Additive" $ testLawOf ([]::[Float]) <$> additiveFloatLaws
     , testGroup "Float - Additive Group" $ testLawOf ([]::[Float]) <$> additiveGroupLaws
-    , testGroup "Float - Multiplicative" $ testLawOf ([]::[Float]) <$> multiplicativeLaws
-    , testGroup "Float - MultiplicativeGroup" $ testLawOf ([]::[Float]) <$> fieldLaws
-    , testGroup "Float - Distributive" $ testLawOf ([]::[Float]) <$> distributiveLaws
-    , testGroup "UVector 5 Int - Additive" $ testLawOf ([]::[UVector 5 Int]) <$> additiveLaws
-    , testGroup "UVector 5 Int - Additive Group" $ testLawOf ([]::[UVector 5 Int]) <$> additiveGroupLaws
-    , testGroup "UVector 5 Int - Multiplicative" $ testLawOf ([]::[UVector 5 Int]) <$> multiplicativeLaws
-    , testGroup "UVector 5 Int - Distributive" $ testLawOf ([]::[UVector 5 Int]) <$> distributiveLaws
-    -- , testGroup "UVector 5 Int - Integral" $ testLawOf ([]::[UVector 5 Int]) <$> integralLaws
-    , testGroup "UVector 5 Float - Additive" $ testLawOf ([]::[UVector 5 Float]) <$> additiveLaws
-    , testGroup "UVector 5 Float - Additive Group" $ testLawOf ([]::[UVector 5 Float]) <$> additiveGroupLaws
-    , testGroup "UVector 5 Float - Multiplicative" $ testLawOf ([]::[UVector 5 Float]) <$> multiplicativeLaws
-    , testGroup "UVector 5 Float - MultiplicativeGroup" $ testLawOf ([]::[UVector 5 Float]) <$> fieldLaws
-    , testGroup "UVector 5 Float - Distributive" $ testLawOf ([]::[UVector 5 Float]) <$> distributiveLaws
-    , testGroup "Vector Int - Additive" $ testLawOf ([]::[Vector 5 [] Int]) <$> additiveLaws
-    , testGroup "Vector Int - Additive Group" $ testLawOf ([]::[Vector 5 [] Int]) <$> additiveGroupLaws
-    , testGroup "Vector Int - Multiplicative" $ testLawOf ([]::[Vector 5 [] Int]) <$> multiplicativeLaws
-    , testGroup "Vector Int - Distributive" $ testLawOf ([]::[Vector 5 [] Int]) <$> distributiveLaws
+    , testGroup "Float - Multiplicative" $ testLawOf ([]::[Float]) <$> multiplicativeFloatLaws
+    , testGroup "Float - MultiplicativeGroup" $ testLawOf ([]::[Float]) <$> fieldFloatLaws
+    , testGroup "Float - Distributive" $ testLawOf ([]::[Float]) <$> distributiveFloatLaws
+    , testGroup "UVector 5 Int - Additive" $ testLawOf ([]::[VectorU 5 Int]) <$> additiveLaws
+    , testGroup "VectorU 5 Int - Additive Group" $ testLawOf ([]::[VectorU 5 Int]) <$> additiveGroupLaws
+    , testGroup "VectorU 5 Int - Multiplicative" $ testLawOf ([]::[VectorU 5 Int]) <$> multiplicativeLaws
+    , testGroup "VectorU 5 Int - Distributive" $ testLawOf ([]::[VectorU 5 Int]) <$> distributiveLaws
+    -- , testGroup "VectorU 5 Int - Integral" $ testLawOf ([]::[VectorU 5 Int]) <$> integralLaws
+    , testGroup "VectorU 5 Float - Additive" $ testLawOf ([]::[VectorU 5 Float]) <$> additiveFloatLaws
+    , testGroup "VectorU 5 Float - Additive Group" $ testLawOf ([]::[VectorU 5 Float]) <$> additiveGroupLaws
+    , testGroup "VectorU 5 Float - Multiplicative" $ testLawOf ([]::[VectorU 5 Float]) <$> multiplicativeFloatLaws
+    , testGroup "VectorU 5 Float - MultiplicativeGroup" $ testLawOf ([]::[VectorU 5 Float]) <$> fieldFloatLaws
+    , testGroup "VectorU 5 Float - Distributive" $ testLawOf ([]::[VectorU 5 Float]) <$> distributiveFloatLaws
+    , testGroup "VectorA Int - Additive" $ testLawOf ([]::[VectorA 5 [] Int]) <$> additiveLaws
+    , testGroup "VectorA Int - Additive Group" $ testLawOf ([]::[VectorA 5 [] Int]) <$> additiveGroupLaws
+    , testGroup "VectorA Int - Multiplicative" $ testLawOf ([]::[VectorA 5 [] Int]) <$> multiplicativeLaws
+    , testGroup "VectorA Int - Distributive" $ testLawOf ([]::[VectorA 5 [] Int]) <$> distributiveLaws
     ]
 
 main :: IO ()
@@ -65,6 +67,20 @@ additiveLaws =
     , ("right id: a + zero = a", Unary (\a -> a + zero == a))
     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
     ]
+
+additiveFloatLaws ::
+    ( Eq a
+    , Additive a
+    , Show a
+    , Arbitrary a
+    ) => [Law a]
+additiveFloatLaws =
+    [ ("associative: a + b = b + a", Uniary $ expectFailure . (\a b c -> (a + b) + c == a + (b + c)))
+    , ("left id: zero + a = a", Unary (\a -> zero + a == a))
+    , ("right id: a + zero = a", Unary (\a -> a + zero == a))
+    , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
+    ]
+
 
 additiveGroupLaws ::
     ( Eq a
@@ -87,15 +103,45 @@ multiplicativeLaws =
     , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
     ]
 
+
+aboutEqual :: (AdditiveGroup a, Ord a) => a -> a -> a -> Bool
+aboutEqual eps a b = a - b <= eps && b - a <= eps
+
+multiplicativeFloatLaws ::
+    ( Eq a
+    , Show a
+    , Arbitrary a
+    , Multiplicative a
+    ) => [Law a]
+multiplicativeFloatLaws =
+    [ ("associative: a * b = b * a", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
+    , ("left id: one * a = a", Unary (\a -> one * a == a))
+    , ("right id: a * one = a", Unary (\a -> a * one == a))
+    , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
+    ]
+
 fieldLaws ::
     ( Eq a
     , MultiplicativeGroup a
+    , AdditiveGroup a
     ) => [Law a]
 fieldLaws =
-    [ ("divide: a / a = one", Unary (\a -> (a / a) == one))
+    [ ("divide: a == zero || a / a = one", Unary (\a -> a == zero || (a / a) == one))
     , ("recip divide: recip a == one / a", Unary (\a -> recip a == one / a))
-    , ("recip left: recip a * a == one", Unary (\a -> recip a * a == one))
-    , ("recip right: a * recip a == one", Unary (\a -> a * recip a == one))
+    , ("recip left: recip a * a == one", Unary (\a -> a == zero || recip a * a == one))
+    , ("recip right: a * recip a == one", Unary (\a -> a == zero || a * recip a == one))
+    ]
+
+fieldFloatLaws ::
+    ( MultiplicativeGroup a
+    , AdditiveGroup a
+    , Eq a
+    ) => [Law a]
+fieldFloatLaws =
+    [ ("divide: a == zero || a / a == one", Uniary $ expectFailure . (\a -> a == zero || a / a == one))
+    , ("recip divide: recip a == one / a", Unary (\a -> recip a == one / a))
+    , ("recip left: recip a * a == one", Uniary $ expectFailure . (\a -> a == zero || recip a * a == one))
+    , ("recip right: a * recip a == one", Uniary $ expectFailure . (\a -> a == zero || a * recip a == one))
     ]
 
 distributiveLaws ::
@@ -107,6 +153,19 @@ distributiveLaws =
     , ("left distributivity: a * (b + c) == a * b + a * c", Ternary (\a b c -> a * (b + c) == a * b + a * c))
     , ("right distributivity: (a + b) * c == a * c + b * c", Ternary (\a b c -> (a + b) * c == a * c + b * c))
     ]
+
+distributiveFloatLaws ::
+    ( Eq a
+    , Distributive a
+    , Show a
+    , Arbitrary a
+    ) => [Law a]
+distributiveFloatLaws =
+    [ ("annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
+    , ("left distributivity: a * (b + c) == a * b + a * c", Uniary $ expectFailure . (\a b c -> a * (b + c) == a * b + a * c))
+    , ("right distributivity: (a + b) * c == a * c + b * c", Uniary $ expectFailure . (\a b c -> (a + b) * c == a * c + b * c))
+    ]
+
 
 integralLaws ::
     ( Eq a

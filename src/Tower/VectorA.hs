@@ -26,7 +26,7 @@ instance (KnownNat n, Traversable f, Applicative f, Show (f a)) => Show (VectorA
 
 instance (P.Num a, AdditiveUnital a, Arbitrary a) => Arbitrary (VectorA 5 [] a) where
     arbitrary = frequency
-        [ (1, pure zero)
+        [ (1, pure $ VectorA $ P.replicate 5 zero)
         , (9, pure $ VectorA [1,2,3,4,5])
         ]
 
@@ -57,27 +57,33 @@ instance (AdditiveMagma a) => AdditiveMagma (VectorA n f a) where
     plus = binOp plus
 instance (AdditiveAssociative a) => AdditiveAssociative (VectorA n f a)
 instance (AdditiveCommutative a) => AdditiveCommutative (VectorA n f a)
-instance (AdditiveUnital a) => AdditiveUnital (VectorA n f a) where
-    zero = VectorA $ pure zero
+instance (AdditiveUnital a, KnownNat n) => AdditiveUnital (VectorA n [] a) where
+    zero = VectorA $ P.replicate n zero
+      where
+            n = P.fromInteger $ natVal (P.Proxy :: P.Proxy n)
 instance (AdditiveInvertible a) => AdditiveInvertible (VectorA n f a) where
     negate (VectorA a) = VectorA $ negate <$> a
-instance (Additive a) => Additive (VectorA n f a)
-instance (AdditiveGroup a) => AdditiveGroup (VectorA n f a)
-instance (AdditiveMagma a) => AdditiveHomomorphic a (VectorA n f a) where
-    plushom a = VectorA (pure a)
-instance (Additive a) => AdditiveModule a (VectorA n f a)
+instance (Additive a, KnownNat n) => Additive (VectorA n [] a)
+instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (VectorA n [] a)
+instance (AdditiveMagma a, KnownNat n) => AdditiveHomomorphic a (VectorA n [] a) where
+    plushom a = VectorA $ P.replicate n a
+      where
+            n = P.fromInteger $ natVal (P.Proxy :: P.Proxy n)
+instance (Additive a, KnownNat n) => AdditiveModule a (VectorA n [] a)
 
 instance (MultiplicativeMagma a) => MultiplicativeMagma (VectorA n f a) where
     times = binOp times
 instance (MultiplicativeAssociative a) => MultiplicativeAssociative (VectorA n f a)
 instance (MultiplicativeCommutative a) => MultiplicativeCommutative (VectorA n f a)
-instance (MultiplicativeUnital a) => MultiplicativeUnital (VectorA n f a) where
-    one = VectorA $ pure one
+instance (MultiplicativeUnital a, KnownNat n) => MultiplicativeUnital (VectorA n [] a) where
+    one = VectorA $ P.replicate n one
+      where
+            n = P.fromInteger $ natVal (P.Proxy :: P.Proxy n)
 instance (MultiplicativeInvertible a) => MultiplicativeInvertible (VectorA n f a) where
     recip (VectorA a) = VectorA $ recip <$> a
-instance (Multiplicative a) => Multiplicative (VectorA n f a)
+instance (Multiplicative a, KnownNat n) => Multiplicative (VectorA n [] a)
 instance (MultiplicativeMagma a) => MultiplicativeHomomorphic a (VectorA n f a) where
     timeshom a = VectorA (pure a)
-instance (Multiplicative a) => MultiplicativeModule a (VectorA n f a)
+instance (Multiplicative a, KnownNat n) => MultiplicativeModule a (VectorA n [] a)
 
-instance (Distributive a) => Distributive (VectorA n f a)
+instance (Distributive a, KnownNat n) => Distributive (VectorA n [] a)
