@@ -5,21 +5,18 @@ version:
 synopsis:
   A numeric tower
 description:
-  This package is an experiment in constructing a principled numeric tower, starting with magmas and proceeding to tensor algebra.
+  A heirarchy of classes for numbers and algebras that combine them: a numeric tower.
   .
-  Performance testing, extended notes and examples can be found in <https://github.com/tonyday567/tower-dev tower-dev>.
+  Performance testing, notes and examples can be found in <https://github.com/tonyday567/tower-dev tower-dev>.
   .
-  The heirarchical tower looks something like:
-  .
+  The tower looks something like:
   .
   <<http://tonyday567.github.io/other/tower.svg>>
   .
-  To library uses protolude as a backend prelude. To use the library:
-  . 
-  > import Tower.Prelude
+  To use the library:
   .
-  The library uses and exports `Monoidal` rather than `Monoid`, and omits a Semigroup class in order to fit in with existing base.
-  . 
+  > import Tower.Prelude
+  > print $ 1 + 1
 category:
   mathematics
 homepage:
