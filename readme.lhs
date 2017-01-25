@@ -16,7 +16,7 @@ To use literal numbers with tower without a type annotation somewhere, type defa
 
     :t 1 + 1
     1 + 1 :: (Additive a, Num a) => a
-
+  
 >   putStrLn $ "1 + 1      = " ++ show (1 + 1 :: Int)
 >   putStrLn $ "1.0 + 1.0  = " ++ show (1.0 + 1.0 :: Float)
 
