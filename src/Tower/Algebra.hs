@@ -145,6 +145,14 @@ class ( Associative a
       , Invertible a) =>
       Group a
 
+-- | see http://chris-taylor.github.io/blog/2013/02/25/xor-trick/
+groupSwap :: (Group a) => (a,a) -> (a,a)
+groupSwap (a,b) =
+    let a' = a ⊕ b
+        b' = a ⊕ inv b
+        a'' = inv b' ⊕ a'
+    in (a'',b')
+
 -- * Additive structure
 -- The Magma structures are repeated for an additive and multiplicative heirarchy, mostly so we can name the specific operators in the usual ways.
 --
