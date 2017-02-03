@@ -12,7 +12,9 @@ module Tower.Algebra (
   , Idempotent(..)
   , Homomorphic(..)
   , Monoidal(..)
+  , Loop(..)
   , Group(..)
+  , Abelian(..)
     -- ** Additive Structure
   , AdditiveMagma(..)
   , AdditiveUnital(..)
@@ -99,17 +101,17 @@ class Magma a where (⊕) :: a -> a -> a
 --
 class Magma a => Unital a where unit :: a
 
--- | Associative
+-- | An Associative Magma
 -- 
 -- > (a ⊕ b) ⊕ c = a ⊕ (b ⊕ c)
 class Magma a => Associative a
 
--- | Commutative
+-- | A Commutative Magma
 --
 -- > a ⊕ b = b ⊕ a
 class Magma a => Commutative a
 
--- | Invertible
+-- | An Invertible Magma
 --
 -- > ∀ a ∈ T: inv a ∈ T
 --
@@ -117,12 +119,12 @@ class Magma a => Commutative a
 --
 class Magma a => Invertible a where inv :: a -> a
 
--- | Idempotent
+-- | An Idempotent Magma
 --
 -- > a ⊕ a = a
 class Magma a => Idempotent a
 
--- | Homomorphic
+-- | A Homomorphic between two Magmas
 --
 -- > ∀ a ∈ A: hom a ∈ B
 --
@@ -139,6 +141,11 @@ class ( Associative a
       , Unital a) =>
       Monoidal a
 
+-- | A Loop is unital and invertible
+class ( Unital a
+      , Invertible a) =>
+      Loop a
+
 -- | A Group is associative, unital and invertible
 class ( Associative a
       , Unital a
@@ -152,6 +159,13 @@ groupSwap (a,b) =
         b' = a ⊕ inv b
         a'' = inv b' ⊕ a'
     in (a'',b')
+
+-- | An Abelian Group is associative, unital, invertible and commutative
+class ( Associative a
+      , Unital a
+      , Invertible a
+      , Commutative a) =>
+      Abelian a
 
 -- * Additive structure
 -- The Magma structures are repeated for an additive and multiplicative heirarchy, mostly so we can name the specific operators in the usual ways.
@@ -219,7 +233,7 @@ class ( AdditiveUnital a
       , AdditiveAssociative a) =>
       AdditiveMonoidal a
 
--- | Additive
+-- | Additive is commutative, unital and associative under addition
 --
 -- > a + b = b + a
 --
@@ -324,7 +338,7 @@ class ( MultiplicativeUnital a
       , MultiplicativeAssociative a) =>
       MultiplicativeMonoidal a
 
--- | Multiplicative
+-- | Multiplicative is commutative, associative and unital under multiplication
 --
 -- > a * b = b * a
 --
@@ -366,23 +380,24 @@ instance MultiplicativeGroup Float
 
 -- | Distributive
 --
--- > a * zero = zero
+-- > a . (b + c) == a . b + a . c
 --
--- > a * (b + c) == a * b + a * c
+-- > (a + b) . c == a . c + b . c
 --
 class (
     Additive a
-  , Multiplicative a
+  , MultiplicativeMagma a
   ) => Distributive a
 
 instance Distributive Double
 instance Distributive Float
 instance Distributive Int
 
--- | a semiring doesn't need to be multiplicative commutative, so distributive doesn't quite fit as a parent
+-- | a semiring
 class ( Additive a
       , MultiplicativeAssociative a
-      , MultiplicativeUnital a) =>
+      , MultiplicativeUnital a
+      , Distributive a) =>
       Semiring a
 
 instance Semiring Double
@@ -390,14 +405,34 @@ instance Semiring Float
 instance Semiring Int
 
 -- | Ring
-class ( Additive a
-      , AdditiveGroup a
-      , Multiplicative a
-      , MultiplicativeGroup a) =>
+class ( AdditiveGroup a
+      , MultiplicativeAssociative a
+      , MultiplicativeUnital a
+      , Distributive a) =>
       Ring a
 
 instance Ring Double
 instance Ring Float
+
+-- | DivisionRing
+class ( AdditiveGroup a
+      , Multiplicative a
+      , Distributive a) =>
+      DivisionRing a
+
+instance DivisionRing Double
+instance DivisionRing Float
+
+-- | Field
+class ( AdditiveGroup a
+      , MultiplicativeGroup a
+      , Distributive a) =>
+      Field a
+
+instance Field Double
+instance Field Float
+
+
 
 -- * Additive Module Structure
 
