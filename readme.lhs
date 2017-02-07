@@ -46,7 +46,7 @@ Using `zero` and `one` rather than magical `0`s and `1`s in code is great practi
 >   putStrLn $ "one        = " ++ show (one :: Float)
 
 BoundedField ensures that divide by zero works.  Having said this, actually printing one/zero as `Infinity` and -one/zero as `-Infinity` ain't coming from tower.
-
+ 
 >   putStrLn $ "one / zero = " ++ show (one / zero :: Float)
 >   putStrLn $ "(zero / zero) + one = " ++ show (zero / zero + one :: Float)
 

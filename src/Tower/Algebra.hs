@@ -553,7 +553,7 @@ class (Additive a, Multiplicative a) => Integral a where
     mod a1 a2 = P.snd (divMod a1 a2)
 
     divMod :: a -> a -> (a,a)
-
+ 
 instance Integral Int where
     toInteger = P.toInteger
     quotRem = P.quotRem
