@@ -7,11 +7,15 @@
 [tower](https://tonyday567.github.com/tower) [![Build Status](https://travis-ci.org/tonyday567/tower.png)](https://travis-ci.org/tonyday567/tower)
 ===
 
-A numeric tower.
+A heirarchy of classes for numbers and algebras that combine them: a numeric tower.
 
-See [tower-dev](https://tonyday567.github.com/tower-dev) for performance benchmarks and extras.
+Performance testing, notes and examples can be found in [tower-dev](https://github.com/tonyday567/tower-dev).
+
+The tower looks something like:
 
 ![](https://tonyday567.github.io/other/field-tower.svg)
+
+To use the library:
 
 > {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 > {-# LANGUAGE NoImplicitPrelude #-}
