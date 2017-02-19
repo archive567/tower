@@ -147,6 +147,7 @@ fieldFloatLaws =
 distributiveLaws ::
     ( Eq a
     , Distributive a
+    , Multiplicative a
     ) => [Law a]
 distributiveLaws =
     [ ("annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
@@ -157,6 +158,7 @@ distributiveLaws =
 distributiveFloatLaws ::
     ( Eq a
     , Distributive a
+    , Multiplicative a
     , Show a
     , Arbitrary a
     ) => [Law a]
@@ -173,7 +175,6 @@ integralLaws ::
     ) => [Law a]
 integralLaws =
     [ ("integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a", Binary (\a b -> b == zero || b * (a `div` b) + (a `mod` b) == a))
-    , ("integral quotrem: b == zero || b * (a `quot` b) + (a `rem` b) == a", Binary (\a b -> b == zero || b * (a `quot` b) + (a `rem` b) == a))
    ]
 
 todoLaws ::

@@ -12,6 +12,7 @@ module Tower.Algebra (
   , Idempotent(..)
   , Homomorphic(..)
   , Monoidal(..)
+  , CMonoidal(..)
   , Loop(..)
   , Group(..)
   , Abelian(..)
@@ -40,6 +41,7 @@ module Tower.Algebra (
     -- * Ring
   , Semiring(..)
   , Ring(..)
+  , Field(..)
     -- * Module
   , AdditiveBasis(..)
   , AdditiveGroupBasis(..)
@@ -140,6 +142,13 @@ instance Magma a => Homomorphic a a where hom a = a
 class ( Associative a
       , Unital a) =>
       Monoidal a
+
+
+-- | A CMonoidal Magma is commutative, associative and unital.
+class ( Commutative a
+      , Associative a
+      , Unital a) =>
+      CMonoidal a
 
 -- | A Loop is unital and invertible
 class ( Unital a
@@ -432,8 +441,6 @@ class ( AdditiveGroup a
 instance Field Double
 instance Field Float
 
-
-
 -- * Additive Module Structure
 
 -- | AdditiveBasis
@@ -533,17 +540,6 @@ class (Additive a, Multiplicative a) => Integral a where
 
     toInteger :: a -> P.Integer
 
-    infixl 7  `quot`, `rem`
-
-    -- | truncates towards zero
-    quot :: a -> a -> a
-    quot a1 a2 = P.fst (quotRem a1 a2)
-
-    rem :: a -> a -> a
-    rem a1 a2 = P.snd (quotRem a1 a2)
-
-    quotRem :: a -> a -> (a,a)
-
     infixl 7 `div`, `mod`
 
     -- | truncates towards negative infinity
@@ -556,7 +552,6 @@ class (Additive a, Multiplicative a) => Integral a where
  
 instance Integral Int where
     toInteger = P.toInteger
-    quotRem = P.quotRem
     divMod = P.divMod
 
 -- | Metric
@@ -582,8 +577,7 @@ class ( MultiplicativeGroup a
     normalize a = a ./ size a
 
 -- | BoundedField
-class ( AdditiveUnital a
-      , MultiplicativeGroup a
+class ( Field a
       , P.Bounded a) =>
       BoundedField a where
     nan :: a
@@ -615,9 +609,8 @@ class Ring a => ExpRing a where
 (^) = (**)
 
 -- | ExpField
-class ( Additive a
-      , ExpRing a
-      , MultiplicativeGroup a) =>
+class ( Field a
+      , ExpRing a ) =>
       ExpField a where
     sqrt :: a -> a
     sqrt a = a**(one/one+one)

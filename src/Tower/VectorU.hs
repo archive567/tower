@@ -72,6 +72,4 @@ instance (KnownNat n, Unbox a, Ring a) => Ring (VectorU n a)
 
 instance (KnownNat n, Unbox a, Integral a) => Integral (VectorU n a) where
     -- toInteger (VectorU v) = VectorU $ map P.toInteger v
-    quotRem (VectorU v) = P.undefined -- (VectorU $ map P.fst v', VectorU $ map P.snd v')
-        where v' = P.undefined -- map quotRem v
     divMod = P.undefined -- divMod
