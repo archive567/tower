@@ -9,6 +9,7 @@ import Test.Tasty.QuickCheck
 import Tower.Algebra
 import Tower.VectorU
 import Tower.VectorA
+import Tower.Extrema
 
 data LawArity a =
     Unary (a -> Bool) |
@@ -52,6 +53,10 @@ tests = testGroup "everything"
     , testGroup "VectorA Int - Additive Group" $ testLawOf ([]::[VectorA 5 [] Int]) <$> additiveGroupLaws
     , testGroup "VectorA Int - Multiplicative" $ testLawOf ([]::[VectorA 5 [] Int]) <$> multiplicativeLaws
     , testGroup "VectorA Int - Distributive" $ testLawOf ([]::[VectorA 5 [] Int]) <$> distributiveLaws
+    , testGroup "Minima - Additive" $ testLawOf ([]::[Minima Double]) <$> additiveLaws
+    , testGroup "Maxima - Additive" $ testLawOf ([]::[Maxima Double]) <$> additiveLaws
+    , testGroup "Extrema - Additive" $ testLawOf ([]::[Extremum Double]) <$> additiveLaws
+    , testGroup "Extrema - MultiplicativeGroup" $ testLawOf ([]::[Extremum Double]) <$> extremaLaws
     ]
 
 main :: IO ()
@@ -114,7 +119,7 @@ multiplicativeFloatLaws ::
     , Multiplicative a
     ) => [Law a]
 multiplicativeFloatLaws =
-    [ ("associative: a * b = b * a", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
+    [ ("associative: (a * b) * c = a * (b * c)", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
     , ("left id: one * a = a", Unary (\a -> one * a == a))
     , ("right id: a * one = a", Unary (\a -> a * one == a))
     , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
@@ -143,6 +148,24 @@ fieldFloatLaws =
     , ("recip left: recip a * a == one", Uniary $ expectFailure . (\a -> a == zero || recip a * a == one))
     , ("recip right: a * recip a == one", Uniary $ expectFailure . (\a -> a == zero || a * recip a == one))
     ]
+
+extremaLaws :: [Law (Extremum Double)]
+extremaLaws =
+    [ ("associative: a + b = b + a", Ternary (\a b c -> (a + b) + c == a + (b + c)))
+    , ("left id: zero + a = a", Unary (\a -> zero + a == a))
+    , ("right id: a + zero = a", Unary (\a -> a + zero == a))
+    , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
+    , ("associative: a * b = b * a", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
+    , ("left id: one * a = a", Uniary $ expectFailure . (\a -> one * a == a))
+    , ("right id: a * one = a", Uniary $ expectFailure . (\a -> a * one == a))
+    , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
+    , ("divide: a == zero' || a / a = one", Uniary $ expectFailure . (\a -> a == zero' || (a / a) == one))
+    , ("recip divide: a == zero' || recip a == one / a", Uniary $ expectFailure . (\a -> a == zero' || recip a == one / a))
+    , ("recip left: a == zero' || recip a * a == one",  Uniary $ expectFailure . (\a -> a == zero' || a == zero || recip a * a == one))
+    , ("recip right: a * recip a == one", Uniary $ expectFailure . (\a -> a == zero' || a * recip a == one))
+    , ("infinity' == recip zero'", Unary (\_ -> infinity' == recip zero'))
+    ]
+
 
 distributiveLaws ::
     ( Eq a
