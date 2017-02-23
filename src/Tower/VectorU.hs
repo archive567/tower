@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | unboxed vector
 
@@ -19,9 +20,12 @@ import Data.Vector.Unboxed as V
 import Data.Proxy (Proxy(..))
 import Test.QuickCheck
 
--- newtype VectorU n a = VectorU { unvec :: (KnownNat n, Unbox a) => Vector a}
+-- newtype VectorU' n a = VectorU' { unvec :: (KnownNat n, Unbox a) => Vector a}
 -- | wrapped fixed-size unboxed vector
 data VectorU (n :: Nat) a = VectorU { v :: Vector a} deriving (Eq, Show)
+
+-- instance Functor (VectorU' n) where
+--      fmap f (VectorU' v) = VectorU' (map f v)
 
 instance (KnownNat n, Arbitrary a, Unbox a, AdditiveUnital a) => Arbitrary (VectorU n a) where
     arbitrary = frequency
@@ -51,7 +55,7 @@ instance (KnownNat n, Unbox a, Additive a) => Additive (VectorU n a)
 instance (KnownNat n, Unbox a, AdditiveGroup a) => AdditiveGroup (VectorU n a)
 instance (KnownNat n, Unbox a, AdditiveUnital a, AdditiveMagma a) => AdditiveHomomorphic a (VectorU n a) where
     plushom a = toVectorU $ P.repeat a
-instance (KnownNat n, Unbox a, Additive a) => AdditiveModule a (VectorU n a)
+instance (Functor (VectorU n), KnownNat n, Unbox a, Additive a) => AdditiveModule (VectorU n) a
 
 instance (Unbox a, MultiplicativeMagma a) => MultiplicativeMagma (VectorU n a) where
     times = binOp times
@@ -65,7 +69,7 @@ instance (KnownNat n, Unbox a, AdditiveUnital a, Multiplicative a) => Multiplica
 instance (KnownNat n, Unbox a, AdditiveUnital a, MultiplicativeGroup a) => MultiplicativeGroup (VectorU n a)
 instance (KnownNat n, Unbox a, AdditiveUnital a, MultiplicativeUnital a, MultiplicativeMagma a) => MultiplicativeHomomorphic a (VectorU n a) where
     timeshom a = toVectorU $ P.repeat one
-instance (KnownNat n, Unbox a, AdditiveUnital a, Multiplicative a) => MultiplicativeModule a (VectorU n a)
+instance (Functor (VectorU n), KnownNat n, Unbox a, AdditiveUnital a, Multiplicative a) => MultiplicativeModule (VectorU n) a
 
 instance (KnownNat n, Unbox a, Distributive a) => Distributive (VectorU n a)
 instance (KnownNat n, Unbox a, Ring a) => Ring (VectorU n a)

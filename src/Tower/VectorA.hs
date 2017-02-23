@@ -18,6 +18,8 @@ import Test.QuickCheck
 -- | a wrapped fixed-size traversable container
 newtype VectorA n f a = VectorA { unvec :: (P.Traversable f, KnownNat n, Applicative f, Functor f) => f a}
 
+instance Functor (VectorA n [])
+
 instance (KnownNat n, Traversable f, Applicative f, Eq (f a)) => Eq (VectorA n f a) where
     (==) (VectorA v) (VectorA v') = v == v'
 
@@ -69,7 +71,7 @@ instance (AdditiveMagma a, KnownNat n) => AdditiveHomomorphic a (VectorA n [] a)
     plushom a = VectorA $ P.replicate n a
       where
             n = P.fromInteger $ natVal (P.Proxy :: P.Proxy n)
-instance (Additive a, KnownNat n) => AdditiveModule a (VectorA n [] a)
+instance (Additive a, KnownNat n) => AdditiveModule (VectorA n []) a
 
 instance (MultiplicativeMagma a) => MultiplicativeMagma (VectorA n f a) where
     times = binOp times
@@ -84,6 +86,6 @@ instance (MultiplicativeInvertible a) => MultiplicativeInvertible (VectorA n f a
 instance (Multiplicative a, KnownNat n) => Multiplicative (VectorA n [] a)
 instance (MultiplicativeMagma a) => MultiplicativeHomomorphic a (VectorA n f a) where
     timeshom a = VectorA (pure a)
-instance (Multiplicative a, KnownNat n) => MultiplicativeModule a (VectorA n [] a)
+instance (Multiplicative a, KnownNat n) => MultiplicativeModule (VectorA n []) a
 
 instance (Distributive a, KnownNat n) => Distributive (VectorA n [] a)

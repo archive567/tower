@@ -23,6 +23,7 @@ module Tower.Algebra (
   , AdditiveCommutative(..)
   , AdditiveInvertible(..)
   , AdditiveHomomorphic(..)
+  , AdditiveIdempotent(..)
   , AdditiveMonoidal(..)
   , Additive(..)
   , AdditiveGroup(..)
@@ -60,6 +61,7 @@ module Tower.Algebra (
   , Banach(..)
   , BoundedField(..)
   , infinity
+  , neginfinity
     -- * Exponential
   , ExpRing(..)
   , (^)
@@ -73,7 +75,7 @@ module Tower.Algebra (
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int)
+import Protolude (Double, Float, Int, Applicative(..), Functor(..))
 
 -- * Magma structure
 -- | A <https://en.wikipedia.org/wiki/Magma_(algebra) Magma> is a tuple (T,⊕) consisting of
@@ -126,7 +128,7 @@ class Magma a => Invertible a where inv :: a -> a
 -- > a ⊕ a = a
 class Magma a => Idempotent a
 
--- | A Homomorphic between two Magmas
+-- | A Homomorph between two Magmas
 --
 -- > ∀ a ∈ A: hom a ∈ B
 --
@@ -142,7 +144,6 @@ instance Magma a => Homomorphic a a where hom a = a
 class ( Associative a
       , Unital a) =>
       Monoidal a
-
 
 -- | A CMonoidal Magma is commutative, associative and unital.
 class ( Commutative a
@@ -230,12 +231,15 @@ instance AdditiveInvertible Int where negate = P.negate
 -- > ∀ a ∈ A: plushom a ∈ B
 --
 -- law is true by construction in Haskell
-class ( AdditiveMagma a
-      , AdditiveMagma b) =>
-      AdditiveHomomorphic a b where
+class (AdditiveMagma b) => AdditiveHomomorphic a b where
     plushom :: a -> b
 
 instance AdditiveMagma a => AdditiveHomomorphic a a where plushom a = a
+
+-- | AdditiveIdempotent
+--
+-- > a `plus` a == a
+class AdditiveMagma a => AdditiveIdempotent a
 
 -- | AdditiveMonoidal
 class ( AdditiveUnital a
@@ -334,8 +338,7 @@ instance MultiplicativeInvertible Float where recip = P.recip
 -- > ∀ a ∈ A: timeshom a ∈ B
 --
 -- law is true by construction in Haskell
-class ( MultiplicativeMagma a
-      , MultiplicativeMagma b) =>
+class ( MultiplicativeMagma b) =>
       MultiplicativeHomomorphic a b where
     timeshom :: a -> b
 
@@ -445,91 +448,89 @@ instance Field Float
 
 -- | AdditiveBasis
 -- element by element addition
-class ( Additive a
-      , AdditiveHomomorphic a a) =>
-      AdditiveBasis a where
+class ( Applicative m
+      , Additive a ) =>
+      AdditiveBasis m a where
     infixr 7 .+.
-    (.+.) :: a -> a -> a
-    a .+. b = plushom a + plushom b
+    (.+.) :: m a -> m a -> m a
+    (.+.) = P.liftA2 (+)
 
 -- | AdditiveGroupBasis
 -- element by element subtraction
-class ( AdditiveGroup a
-      , AdditiveHomomorphic a a) =>
-      AdditiveGroupBasis a where
-    infixr 7 .-.
-    (.-.) :: a -> a -> a
-    a .-. b = plushom a - plushom b
+class ( Applicative m
+      , AdditiveGroup a ) =>
+      AdditiveGroupBasis m a where
+    infixr 6 .-.
+    (.-.) :: m a -> m a -> m a
+    (.-.) = P.liftA2 (-)
 
 -- | AdditiveModule
-class ( Additive a
-      , Additive s
-      , AdditiveHomomorphic s a) =>
-      AdditiveModule s a where
-    infixr 7 .+
-    (.+) :: AdditiveModule s a => s -> a -> a
-    s .+ a = plushom s + a
+class ( Functor m
+      , Additive a) =>
+      AdditiveModule m a where
+    infixr 6 .+
+    (.+) :: AdditiveModule m a => m a -> a -> m a
+    m .+ a = fmap (a+) m
 
-    infixr 7 +.
-    (+.) :: AdditiveModule s a => a -> s -> a
-    a +. s = a + plushom s
+    infixr 6 +.
+    (+.) :: AdditiveModule m a => a -> m a -> m a
+    a +. m = fmap (a+) m
 
 -- | AdditiveGroupModule
-class ( AdditiveModule s a
+class ( Functor m
       , AdditiveGroup a) =>
-      AdditiveGroupModule s a where
-    infixr 7 .-
-    (.-) :: AdditiveModule s a => s -> a -> a
-    s .- a = plushom s + a
+      AdditiveGroupModule m a where
+    infixr 6 .-
+    (.-) :: AdditiveModule m a => m a -> a -> m a
+    m .- a = fmap (\x -> x - a) m
 
-    infixr 7 -.
-    (-.) :: AdditiveModule s a => a -> s -> a
-    a -. s = a - plushom s
+    infixr 6 -.
+    (-.) :: AdditiveModule m a => a -> m a -> m a
+    a -. m = fmap (\x -> a - x) m
 
 -- * Multiplicative Module Structure
 
 -- | MultiplicativeBasis
--- element by element addition
-class ( Multiplicative a
-      , MultiplicativeHomomorphic a a) =>
-      MultiplicativeBasis a where
+-- element by element multiplication
+class ( Applicative m
+      , Multiplicative a ) =>
+      MultiplicativeBasis m a where
     infixr 7 .*.
-    (.*.) :: a -> a -> a
-    a .*. b = timeshom a * timeshom b
+    (.*.) :: m a -> m a -> m a
+    (.*.) = P.liftA2 (*)
 
 -- | MultiplicativeGroupBasis
--- element by element subtraction
-class ( MultiplicativeGroup a
-      , MultiplicativeHomomorphic a a) =>
-      MultiplicativeGroupBasis a where
+-- element by element division
+class ( Applicative m
+      , MultiplicativeGroup a ) =>
+      MultiplicativeGroupBasis m a where
     infixr 7 ./.
-    (./.) :: a -> a -> a
-    a ./. b = timeshom a / timeshom b
+    (./.) :: m a -> m a -> m a
+    (./.) = P.liftA2 (/)
 
 -- | MultiplicativeModule
-class ( Multiplicative a
-      , Multiplicative s
-      , MultiplicativeHomomorphic s a) =>
-      MultiplicativeModule s a where
+class ( Functor m
+      , Multiplicative a) =>
+      MultiplicativeModule m a where
     infixr 7 .*
-    (.*) :: MultiplicativeModule s a => s -> a -> a
-    s .* a = timeshom s * a
+    (.*) :: MultiplicativeModule m a => m a -> a -> m a
+    m .* a = fmap (a*) m
 
     infixr 7 *.
-    (*.) :: MultiplicativeModule s a => a -> s -> a
-    a *. s = a * timeshom s
+    (*.) :: MultiplicativeModule m a => a -> m a -> m a
+    a *. m = fmap (a*) m
 
 -- | MultiplicativeGroupModule
-class ( MultiplicativeModule s a
+class ( Functor m
       , MultiplicativeGroup a) =>
-      MultiplicativeGroupModule s a where
+      MultiplicativeGroupModule m a where
     infixr 7 ./
-    (./) :: MultiplicativeModule s a => s -> a -> a
-    s ./ a = timeshom s * a
+    (./) :: MultiplicativeModule m a => m a -> a -> m a
+    m ./ a = fmap (/ a) m
 
     infixr 7 /.
-    (/.) :: MultiplicativeModule s a => a -> s -> a
-    a /. s = a / timeshom s
+    (/.) :: MultiplicativeModule m a => a -> m a -> m a
+    a /. m = fmap (\x -> a / x) m
 
 -- | Integral
 --
@@ -559,21 +560,21 @@ class Metric r m where
     d :: m -> m -> r
 
 -- | Normed
-class Normed a where
-    size :: a -> a
+class Normed a b where
+    size :: a -> b
 
 -- | abs
-abs :: Normed a => a -> a
+abs :: Normed a b => a -> b
 abs = size
 
 -- | Banach
 class ( MultiplicativeGroup a
-      , MultiplicativeModule a a
-      , MultiplicativeGroupModule a a
+      , MultiplicativeModule m a
+      , MultiplicativeGroupModule m a
       , MultiplicativeInvertible a
-      , Normed a) =>
-      Banach a where
-    normalize :: a -> a
+      , Normed (m a) a) =>
+      Banach m a where
+    normalize :: m a -> m a
     normalize a = a ./ size a
 
 -- | BoundedField
@@ -596,6 +597,9 @@ instance BoundedField Double
 -- | infinity
 infinity :: BoundedField a => a
 infinity = P.maxBound
+
+neginfinity :: BoundedField a => a
+neginfinity = P.minBound
 
 -- | ExpRing
 class Ring a => ExpRing a where
@@ -629,18 +633,18 @@ class TensorAlgebra a where
     timesright :: (a><a) -> a -> a
 
 -- | Hilbert
-class (Banach a, TensorAlgebra a, ExpField r, AdditiveGroup a) => Hilbert a r where
+class (Banach m a, TensorAlgebra a, ExpField r, AdditiveGroup (m a)) => Hilbert m a r where
     infix 8 <?>
-    (<?>) :: a -> a -> r
+    (<?>) :: m a -> m a -> r
 
 -- | squaredInnerProductNorm 
-squaredInnerProductNorm :: Hilbert v r => v -> r
+squaredInnerProductNorm :: Hilbert m v r => m v -> r
 squaredInnerProductNorm v = v <?> v
 
 -- | innerProductNorm 
-innerProductNorm :: (Hilbert v r) => v -> r
+innerProductNorm :: (Hilbert m v r) => m v -> r
 innerProductNorm = sqrt P.. squaredInnerProductNorm
 
 -- | innerProductDistance
-innerProductDistance :: Hilbert v r => v -> v -> r
+innerProductDistance :: Hilbert m v r => m v -> m v -> r
 innerProductDistance v1 v2 = innerProductNorm (v1 - v2)
