@@ -6,26 +6,29 @@ module Main where
 import Protolude hiding ((+),(-),(*),(/),zero,one,negate,recip,div,mod,rem,quot, Integral(..))
 import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
 import Test.Tasty.QuickCheck
+import Control.Lens
 import Tower.Algebra
 import Tower.VectorU
 import Tower.VectorA
 import Tower.Extrema
 
 data LawArity a =
+    Nonary Bool |
     Unary (a -> Bool) |
     Binary (a -> a -> Bool) |
     Ternary (a -> a -> a -> Bool) |
     Ornary (a -> a -> a -> a -> Bool) |
-    Uniary (a -> Property)
+    Failiary (a -> Property)
 
 type Law a = (TestName, LawArity a)
 
 testLawOf  :: (Arbitrary a, Show a) => [a] -> Law a -> TestTree
+testLawOf _ (name, Nonary f) = testProperty name f
 testLawOf _ (name, Unary f) = testProperty name f
 testLawOf _ (name, Binary f) = testProperty name f
 testLawOf _ (name, Ternary f) = testProperty name f
 testLawOf _ (name, Ornary f) = testProperty name f
-testLawOf _ (name, Uniary f) = testProperty name f
+testLawOf _ (name, Failiary f) = testProperty name f
 
 tests :: TestTree
 tests = testGroup "everything"
@@ -53,10 +56,7 @@ tests = testGroup "everything"
     , testGroup "VectorA Int - Additive Group" $ testLawOf ([]::[VectorA 5 [] Int]) <$> additiveGroupLaws
     , testGroup "VectorA Int - Multiplicative" $ testLawOf ([]::[VectorA 5 [] Int]) <$> multiplicativeLaws
     , testGroup "VectorA Int - Distributive" $ testLawOf ([]::[VectorA 5 [] Int]) <$> distributiveLaws
-    , testGroup "Minima - Additive" $ testLawOf ([]::[Minima Double]) <$> additiveLaws
-    , testGroup "Maxima - Additive" $ testLawOf ([]::[Maxima Double]) <$> additiveLaws
-    , testGroup "Extrema - Additive" $ testLawOf ([]::[Extremum Double]) <$> additiveLaws
-    , testGroup "Extrema - MultiplicativeGroup" $ testLawOf ([]::[Extremum Double]) <$> extremaLaws
+    , testGroup "Extrema" $ testLawOf ([]::[Extrema Double]) <$> extremaLaws
     ]
 
 main :: IO ()
@@ -67,7 +67,7 @@ additiveLaws ::
     , Additive a
     ) => [Law a]
 additiveLaws =
-    [ ("associative: a + b = b + a", Ternary (\a b c -> (a + b) + c == a + (b + c)))
+    [ ("associative: (a + b) + c = a + (b + c)", Ternary (\a b c -> (a + b) + c == a + (b + c)))
     , ("left id: zero + a = a", Unary (\a -> zero + a == a))
     , ("right id: a + zero = a", Unary (\a -> a + zero == a))
     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
@@ -80,7 +80,7 @@ additiveFloatLaws ::
     , Arbitrary a
     ) => [Law a]
 additiveFloatLaws =
-    [ ("associative: a + b = b + a", Uniary $ expectFailure . (\a b c -> (a + b) + c == a + (b + c)))
+    [ ("associative: (a + b) + c = a + (b + c)", Failiary $ expectFailure . (\a b c -> (a + b) + c == a + (b + c)))
     , ("left id: zero + a = a", Unary (\a -> zero + a == a))
     , ("right id: a + zero = a", Unary (\a -> a + zero == a))
     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
@@ -102,7 +102,7 @@ multiplicativeLaws ::
     , Multiplicative a
     ) => [Law a]
 multiplicativeLaws =
-    [ ("associative: a * b = b * a", Ternary (\a b c -> (a * b) * c == a * (b * c)))
+    [ ("associative: (a * b) * c = a * (b * c)", Ternary (\a b c -> (a * b) * c == a * (b * c)))
     , ("left id: one * a = a", Unary (\a -> one * a == a))
     , ("right id: a * one = a", Unary (\a -> a * one == a))
     , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
@@ -119,7 +119,7 @@ multiplicativeFloatLaws ::
     , Multiplicative a
     ) => [Law a]
 multiplicativeFloatLaws =
-    [ ("associative: (a * b) * c = a * (b * c)", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
+    [ ("associative: (a * b) * c = a * (b * c)", Failiary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
     , ("left id: one * a = a", Unary (\a -> one * a == a))
     , ("right id: a * one = a", Unary (\a -> a * one == a))
     , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
@@ -143,29 +143,36 @@ fieldFloatLaws ::
     , Eq a
     ) => [Law a]
 fieldFloatLaws =
-    [ ("divide: a == zero || a / a == one", Uniary $ expectFailure . (\a -> a == zero || a / a == one))
+    [ ("divide: a == zero || a / a == one", Failiary $ expectFailure . (\a -> a == zero || a / a == one))
     , ("recip divide: recip a == one / a", Unary (\a -> recip a == one / a))
-    , ("recip left: recip a * a == one", Uniary $ expectFailure . (\a -> a == zero || recip a * a == one))
-    , ("recip right: a * recip a == one", Uniary $ expectFailure . (\a -> a == zero || a * recip a == one))
+    , ("recip left: recip a * a == one", Failiary $ expectFailure . (\a -> a == zero || recip a * a == one))
+    , ("recip right: a * recip a == one", Failiary $ expectFailure . (\a -> a == zero || a * recip a == one))
     ]
 
-extremaLaws :: [Law (Extremum Double)]
+extremaLaws :: [Law (Extrema Double)]
 extremaLaws =
-    [ ("associative: a + b = b + a", Ternary (\a b c -> (a + b) + c == a + (b + c)))
+    [ ("associative: (a + b) + c = a + (b + c)", Ternary (\a b c -> (a + b) + c == a + (b + c)))
     , ("left id: zero + a = a", Unary (\a -> zero + a == a))
     , ("right id: a + zero = a", Unary (\a -> a + zero == a))
     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
-    , ("associative: a * b = b * a", Uniary $ expectFailure .  (\a b c -> (a * b) * c == a * (b * c)))
-    , ("left id: one * a = a", Uniary $ expectFailure . (\a -> one * a == a))
-    , ("right id: a * one = a", Uniary $ expectFailure . (\a -> a * one == a))
-    , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
-    , ("divide: a == zero' || a / a = one", Uniary $ expectFailure . (\a -> a == zero' || (a / a) == one))
-    , ("recip divide: a == zero' || recip a == one / a", Uniary $ expectFailure . (\a -> a == zero' || recip a == one / a))
-    , ("recip left: a == zero' || recip a * a == one",  Uniary $ expectFailure . (\a -> a == zero' || a == zero || recip a * a == one))
-    , ("recip right: a * recip a == one", Uniary $ expectFailure . (\a -> a == zero' || a * recip a == one))
-    , ("infinity' == recip zero'", Unary (\_ -> infinity' == recip zero'))
+    , ("associative: a * (b * c) = (a * b) * c", Ternary (\a b c -> fuzzyeq 1e-4 ((a * b) * c) (a * (b * c))))
+    , ("left id: one * a = a", Unary (\a -> fuzzyeq 1e-8 (one * a) a))
+    , ("right id: a * one = a", Unary (\a -> fuzzyeq 1e-8 (a * one) a))
+    , ("commutative: a * b == b * a", Failiary $ expectFailure . (\a b -> a * b == b * a))
+    , ("recip iso: recip . recip == id", Unary (\a -> zeroRange a || fuzzyeq 1e-4 (recip . recip $ a) a))
+    , ("zero == recip theta", Nonary (zero == recip (theta::Extrema Double)))
+    , ("divide: zero range || a / a = one", Unary (\a -> zeroRange a || fuzzyeq 1e-8 (a / a) one))
+    , ("recip divide: zero range || recip a == one / a", Unary (\a -> zeroRange a || fuzzyeq 1e-8 (recip a) (one / a)))
+    , ("recip left: zero range || recip a * a == one",  Unary (\a -> zeroRange a ||fuzzyeq 1e-8 (recip a * a) one))
+    , ("recip right: zero range || a * recip a == one", Unary (\a -> zeroRange a || fuzzyeq 1e-8 (a * recip a) one))
     ]
 
+fuzzyeq :: (AdditiveGroup a, Ord a) => a -> Extrema a -> Extrema a -> Bool
+fuzzyeq eps (Extrema (l0,u0)) (Extrema (l1,u1)) =
+    (l0-l1) <= eps && (l1-l0) <= eps && (u0-u1) <= eps && (u1-u0) <= eps 
+
+zeroRange :: (BoundedField a, Eq a) => Extrema a -> Bool
+zeroRange a = view range a == zero
 
 distributiveLaws ::
     ( Eq a
@@ -187,8 +194,8 @@ distributiveFloatLaws ::
     ) => [Law a]
 distributiveFloatLaws =
     [ ("annihilation: a * zero == zero", Unary (\a -> a * zero == zero))
-    , ("left distributivity: a * (b + c) == a * b + a * c", Uniary $ expectFailure . (\a b c -> a * (b + c) == a * b + a * c))
-    , ("right distributivity: (a + b) * c == a * c + b * c", Uniary $ expectFailure . (\a b c -> (a + b) * c == a * c + b * c))
+    , ("left distributivity: a * (b + c) == a * b + a * c", Failiary $ expectFailure . (\a b c -> a * (b + c) == a * b + a * c))
+    , ("right distributivity: (a + b) * c == a * c + b * c", Failiary $ expectFailure . (\a b c -> (a + b) * c == a * c + b * c))
     ]
 
 
@@ -225,4 +232,3 @@ todoLaws =
       --         && distance m1 m3 <= distance m1 m2 + distance m2 m3
       --         && distance m2 m3 <= distance m1 m3 + distance m2 m1
     ]
-

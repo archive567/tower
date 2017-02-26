@@ -107,7 +107,8 @@ test-suite test
     tasty-smallcheck,
     QuickCheck,
     tasty-quickcheck,
-    tower
+    tower,
+    lens
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,

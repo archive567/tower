@@ -75,7 +75,7 @@ module Tower.Algebra (
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int, Applicative(..), Functor(..))
+import Protolude (Double, Float, Int, Integer, Applicative(..), Functor(..))
 
 -- * Magma structure
 -- | A <https://en.wikipedia.org/wiki/Magma_(algebra) Magma> is a tuple (T,⊕) consisting of
@@ -186,6 +186,7 @@ class AdditiveMagma a where plus :: a -> a -> a
 instance AdditiveMagma Double where plus = (P.+)
 instance AdditiveMagma Float where plus = (P.+)
 instance AdditiveMagma Int where plus = (P.+)
+instance AdditiveMagma Integer where plus = (P.+)
 
 -- | AdditiveUnital
 --
@@ -196,6 +197,7 @@ class AdditiveMagma a => AdditiveUnital a where zero :: a
 instance AdditiveUnital Double where zero = 0
 instance AdditiveUnital Float where zero = 0
 instance AdditiveUnital Int where zero = 0
+instance AdditiveUnital Integer where zero = 0
 
 -- | AdditiveAssociative
 --
@@ -205,6 +207,7 @@ class AdditiveMagma a => AdditiveAssociative a
 instance AdditiveAssociative Double
 instance AdditiveAssociative Float
 instance AdditiveAssociative Int
+instance AdditiveAssociative Integer
 
 -- | AdditiveCommutative
 --
@@ -214,6 +217,7 @@ class AdditiveMagma a => AdditiveCommutative a
 instance AdditiveCommutative Double
 instance AdditiveCommutative Float
 instance AdditiveCommutative Int
+instance AdditiveCommutative Integer
 
 -- | AdditiveInvertible
 --
@@ -225,6 +229,7 @@ class AdditiveMagma a => AdditiveInvertible a where negate :: a -> a
 instance AdditiveInvertible Double where negate = P.negate
 instance AdditiveInvertible Float where negate = P.negate
 instance AdditiveInvertible Int where negate = P.negate
+instance AdditiveInvertible Integer where negate = P.negate
 
 -- | AdditiveHomomorphic
 --
@@ -260,13 +265,14 @@ class ( AdditiveCommutative a
       , AdditiveUnital a
       , AdditiveAssociative a) =>
       Additive a where
-    infixr 6 +
+    infixl 6 +
     (+) :: a -> a -> a
     a + b = plus a b
 
 instance Additive Double
 instance Additive Float
 instance Additive Int
+instance Additive Integer
 
 -- | AdditiveGroup
 --
@@ -279,13 +285,21 @@ instance Additive Int
 class ( Additive a
       , AdditiveInvertible a) =>
       AdditiveGroup a where
-    infixr 6 -
+    infixl 6 -
     (-) :: a -> a -> a
     (-) a b = a `plus` negate b
 
 instance AdditiveGroup Double
 instance AdditiveGroup Float
 instance AdditiveGroup Int
+instance AdditiveGroup Integer
+
+class (AdditiveGroup a) => Epsilon a where eps :: a
+
+instance Epsilon Double where eps = 1e-8
+instance Epsilon Float where eps = 1e-8
+instance Epsilon Int where eps = zero
+instance Epsilon Integer where eps = zero
 
 -- * Multiplicative structure
 -- | 'times' is used for the multiplicative magma to distinguish from '*' which, by convention, implies commutativity
@@ -294,6 +308,7 @@ class MultiplicativeMagma a where times :: a -> a -> a
 instance MultiplicativeMagma Double where times = (P.*)
 instance MultiplicativeMagma Float where times = (P.*)
 instance MultiplicativeMagma Int where times = (P.*)
+instance MultiplicativeMagma Integer where times = (P.*)
 
 -- | MultiplicativeUnital
 --
@@ -304,6 +319,7 @@ class MultiplicativeMagma a => MultiplicativeUnital a where one :: a
 instance MultiplicativeUnital Double where one = 1
 instance MultiplicativeUnital Float where one = 1
 instance MultiplicativeUnital Int where one = 1
+instance MultiplicativeUnital Integer where one = 1
 
 -- | MultiplicativeCommutative
 --
@@ -313,6 +329,7 @@ class MultiplicativeMagma a => MultiplicativeCommutative a
 instance MultiplicativeCommutative Double
 instance MultiplicativeCommutative Float
 instance MultiplicativeCommutative Int
+instance MultiplicativeCommutative Integer
 
 -- | MultiplicativeAssociative
 --
@@ -322,6 +339,7 @@ class MultiplicativeMagma a => MultiplicativeAssociative a
 instance MultiplicativeAssociative Double
 instance MultiplicativeAssociative Float
 instance MultiplicativeAssociative Int
+instance MultiplicativeAssociative Integer
 
 -- | MultiplicativeInvertible
 --
@@ -364,13 +382,14 @@ class ( MultiplicativeCommutative a
       , MultiplicativeUnital a
       , MultiplicativeAssociative a) =>
       Multiplicative a where
-    infixr 7 *
+    infixl 7 *
     (*) :: a -> a -> a
     a * b = times a b
 
 instance Multiplicative Double
 instance Multiplicative Float
 instance Multiplicative Int
+instance Multiplicative Integer
 
 -- | MultiplicativeGroup
 --
@@ -383,7 +402,7 @@ instance Multiplicative Int
 class ( Multiplicative a
       , MultiplicativeInvertible a) =>
       MultiplicativeGroup a where
-    infixr 7 /
+    infixl 7 /
     (/) :: a -> a -> a
     (/) a b = a `times` recip b
 
@@ -404,6 +423,7 @@ class (
 instance Distributive Double
 instance Distributive Float
 instance Distributive Int
+instance Distributive Integer
 
 -- | a semiring
 class ( Additive a
@@ -415,6 +435,7 @@ class ( Additive a
 instance Semiring Double
 instance Semiring Float
 instance Semiring Int
+instance Semiring Integer
 
 -- | Ring
 class ( AdditiveGroup a
@@ -451,7 +472,7 @@ instance Field Float
 class ( Applicative m
       , Additive a ) =>
       AdditiveBasis m a where
-    infixr 7 .+.
+    infixl 7 .+.
     (.+.) :: m a -> m a -> m a
     (.+.) = P.liftA2 (+)
 
@@ -460,7 +481,7 @@ class ( Applicative m
 class ( Applicative m
       , AdditiveGroup a ) =>
       AdditiveGroupBasis m a where
-    infixr 6 .-.
+    infixl 6 .-.
     (.-.) :: m a -> m a -> m a
     (.-.) = P.liftA2 (-)
 
@@ -468,11 +489,11 @@ class ( Applicative m
 class ( Functor m
       , Additive a) =>
       AdditiveModule m a where
-    infixr 6 .+
+    infixl 6 .+
     (.+) :: AdditiveModule m a => m a -> a -> m a
     m .+ a = fmap (a+) m
 
-    infixr 6 +.
+    infixl 6 +.
     (+.) :: AdditiveModule m a => a -> m a -> m a
     a +. m = fmap (a+) m
 
@@ -480,11 +501,11 @@ class ( Functor m
 class ( Functor m
       , AdditiveGroup a) =>
       AdditiveGroupModule m a where
-    infixr 6 .-
+    infixl 6 .-
     (.-) :: AdditiveModule m a => m a -> a -> m a
     m .- a = fmap (\x -> x - a) m
 
-    infixr 6 -.
+    infixl 6 -.
     (-.) :: AdditiveModule m a => a -> m a -> m a
     a -. m = fmap (\x -> a - x) m
 
@@ -495,7 +516,7 @@ class ( Functor m
 class ( Applicative m
       , Multiplicative a ) =>
       MultiplicativeBasis m a where
-    infixr 7 .*.
+    infixl 7 .*.
     (.*.) :: m a -> m a -> m a
     (.*.) = P.liftA2 (*)
 
@@ -504,7 +525,7 @@ class ( Applicative m
 class ( Applicative m
       , MultiplicativeGroup a ) =>
       MultiplicativeGroupBasis m a where
-    infixr 7 ./.
+    infixl 7 ./.
     (./.) :: m a -> m a -> m a
     (./.) = P.liftA2 (/)
 
@@ -512,11 +533,11 @@ class ( Applicative m
 class ( Functor m
       , Multiplicative a) =>
       MultiplicativeModule m a where
-    infixr 7 .*
+    infixl 7 .*
     (.*) :: MultiplicativeModule m a => m a -> a -> m a
     m .* a = fmap (a*) m
 
-    infixr 7 *.
+    infixl 7 *.
     (*.) :: MultiplicativeModule m a => a -> m a -> m a
     a *. m = fmap (a*) m
 
@@ -524,11 +545,11 @@ class ( Functor m
 class ( Functor m
       , MultiplicativeGroup a) =>
       MultiplicativeGroupModule m a where
-    infixr 7 ./
+    infixl 7 ./
     (./) :: MultiplicativeModule m a => m a -> a -> m a
     m ./ a = fmap (/ a) m
 
-    infixr 7 /.
+    infixl 7 /.
     (/.) :: MultiplicativeModule m a => a -> m a -> m a
     a /. m = fmap (\x -> a / x) m
 
@@ -555,9 +576,13 @@ instance Integral Int where
     toInteger = P.toInteger
     divMod = P.divMod
 
+instance Integral Integer where
+    toInteger = P.toInteger
+    divMod = P.divMod
+
 -- | Metric
 class Metric r m where
-    d :: m -> m -> r
+    distance :: m -> m -> r
 
 -- | Normed
 class Normed a b where
@@ -604,13 +629,18 @@ neginfinity = P.minBound
 -- | ExpRing
 class Ring a => ExpRing a where
     logBase :: a -> a -> a
-
     (**) :: ExpRing a => a -> a -> a
-    (**) = P.undefined
 
 -- | (^)
 (^) :: ExpRing a => a -> a -> a
 (^) = (**)
+
+instance ExpRing Double where
+    logBase = P.logBase
+    (**) = (P.**)
+instance ExpRing Float where
+    logBase = P.logBase
+    (**) = (P.**)
 
 -- | ExpField
 class ( Field a
@@ -622,8 +652,16 @@ class ( Field a
     exp :: a -> a
     log :: a -> a
 
+instance ExpField Double where
+    exp = P.exp
+    log = P.log
+
+instance ExpField Float where
+    exp = P.exp
+    log = P.log
+
 -- | ><
-infixr 8 ><
+infixl 8 ><
 type family (><) (a::k1) (b::k2) :: *
 
 -- | TensorAlgebra

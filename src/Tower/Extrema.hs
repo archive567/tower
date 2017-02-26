@@ -1,237 +1,124 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
-{- * Semigroup has a `Min` instance, hence the use of Minima
+{- * Extrema is the collective term for a minimum and maximum.  There are a few alternative synonyms out there, such as:
+- interval
+- range
+- InfSup
 
 -}
 
 module Tower.Extrema
-    ( Minima(..)
-    , Maxima(..)
-    , Extremum(..)
-    , zero'
-    , infinity'
+    ( Extrema(..)
+    , low
+    , mid
+    , range
+    , high
+    , theta
     )
     where
 
-import Protolude as X hiding
-    ( (+)
-    , (-)
-    , (*)
-    , (/)
-    , zero
-    , negate
-    , recip
-    , Integral(..)
-    , Semiring(..)
-    , log
-    , logBase
-    , exp
-    , sqrt
-    , (**)
-    , abs
-    , (^)
-    , infinity
-    )
-
+import Protolude
+    ( Eq(..)
+    , Ord(..)
+    , Bool(..)
+    , Show(..)
+    , Functor(..)
+    , Applicative(..)
+    , (||)
+    , ($))
 import Tower.Algebra
 import Control.Lens
 import Test.QuickCheck
 
-newtype Minima a = Minima { getMinima :: a }
-  deriving (Eq, Ord, Show, Read, Typeable, Generic)
-
-instance (Arbitrary a) => Arbitrary (Minima a) where
-    arbitrary = Minima <$> arbitrary
-
-instance Functor Minima where
-    fmap f (Minima a) = Minima (f a)
-
-instance Foldable Minima where
-  foldMap f (Minima a) = f a
-
-instance Traversable Minima where
-  traverse f (Minima a) = Minima <$> f a
-
-instance Applicative Minima where
-    pure a = Minima a
-    (Minima f) <*> (Minima a) = Minima (f a)
-
-instance Monad Minima where
-  (>>) = (*>)
-  Minima a >>= f = f a
-
-instance (Bounded a) => Bounded (Minima a) where
-    minBound = Minima minBound
-    maxBound = Minima maxBound
-
-instance Ord a => Semigroup (Minima a) where
-  (Minima a) <> (Minima b) = Minima (min a b)
-
-instance (Ord a, Bounded a) => Monoid (Minima a) where
-  mempty = maxBound
-  mappend = (<>)
-
--- | start of the numeric heirarchy, and point of departure compared with the heirarchy of `[Min](http://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Semigroup.html#t:Min)`.
--- base wimps out very quickly and defines Min a + Min b = Min (a+b)
--- here, we start with `min` as the magma and see where it flows
-instance (Ord a) => AdditiveMagma (Minima a) where
-    plus (Minima a) (Minima b) = Minima (min a b)
-
-instance (Ord a) => AdditiveAssociative (Minima a)
-instance (Ord a) => AdditiveCommutative (Minima a)
-
--- | a + a = a
-instance (Ord a) => AdditiveIdempotent (Minima a)
-
-instance (Ord a, BoundedField a) => AdditiveUnital (Minima a) where
-    zero = Minima infinity
-
--- | we have Minima 1 + Minima 2 = Minima 1
-instance (Ord a, BoundedField a) => Additive (Minima a)
-
--- | Max
-newtype Maxima a = Maxima { getMaxima :: a }
-  deriving (Eq, Ord, Show, Read, Typeable, Generic)
-
-instance (Arbitrary a) => Arbitrary (Maxima a) where
-    arbitrary = Maxima <$> arbitrary
-
-instance Functor Maxima where
-    fmap f (Maxima a) = Maxima (f a)
-
-instance Foldable Maxima where
-  foldMap f (Maxima a) = f a
-
-instance Traversable Maxima where
-  traverse f (Maxima a) = Maxima <$> f a
-
-instance Applicative Maxima where
-    pure a = Maxima a
-    (Maxima f) <*> (Maxima a) = Maxima (f a)
-
-instance Monad Maxima where
-  (>>) = (*>)
-  Maxima a >>= f = f a
-
-instance (Bounded a) => Bounded (Maxima a) where
-    minBound = Maxima minBound
-    maxBound = Maxima maxBound
-
-instance Ord a => Semigroup (Maxima a) where
-  (Maxima a) <> (Maxima b) = Maxima (min a b)
-
-instance (Ord a, Bounded a) => Monoid (Maxima a) where
-  mempty = maxBound
-  mappend = (<>)
-
-instance (Ord a) => AdditiveMagma (Maxima a) where
-    plus (Maxima a) (Maxima b) = Maxima (max a b)
-
-instance (Ord a) => AdditiveAssociative (Maxima a)
-instance (Ord a) => AdditiveCommutative (Maxima a)
-
--- | a + a = a
-instance (Ord a) => AdditiveIdempotent (Maxima a)
-
-instance (Ord a, BoundedField a) => AdditiveUnital (Maxima a) where
-    zero = Maxima neginfinity
-
--- | we have Maxima 1 + Maxima 2 = Maxima 2
-instance (Ord a, BoundedField a) => Additive (Maxima a)
-
 -- | extrema
-newtype Extremum a = Extremum { unextremum :: (Minima a, Maxima a) }
-  deriving (Eq, Ord, Show, Read, Typeable, Generic, Functor)
+newtype Extrema a = Extrema { unextrema_ :: (a, a) }
+  deriving (Eq, Ord, Show, Functor)
 
-instance (Ord a, Arbitrary a) => Arbitrary (Extremum a) where
+instance (Ord a, Arbitrary a) => Arbitrary (Extrema a) where
     arbitrary = do
         a <- arbitrary
         b <- arbitrary
-        case a < b of
-          True -> return $ Extremum (Minima a, Maxima b)
-          False -> return $ Extremum (Minima b, Maxima a)
+        if a < b
+           then pure (Extrema (a, b))
+           else pure (Extrema (b, a))
 
-low :: Lens' (Extremum a) a
-low = lens (\(Extremum (Minima l,_)) -> l) (\(Extremum (_,u)) l -> Extremum (Minima l,u))
+low :: Lens' (Extrema a) a
+low = lens (\(Extrema (l,_)) -> l) (\(Extrema (_,u)) l -> Extrema (l,u))
 
-high :: Lens' (Extremum a) a
-high = lens (\(Extremum (_,Maxima u)) -> u) (\(Extremum (l,_)) u -> Extremum (l,Maxima u))
+high :: Lens' (Extrema a) a
+high = lens (\(Extrema (_,u)) -> u) (\(Extrema (l,_)) u -> Extrema (l,u))
 
-data Extremum' a = Extremum' { _mid :: a, _siz :: a}
+mid ::
+    (BoundedField a) =>
+    Lens' (Extrema a) a
+mid =
+    lens
+    (\(Extrema (l,u)) -> (l+u)/two)
+    (\(Extrema (l,u)) m -> Extrema (m - (u-l)/two, m + (u-l)/two))
 
-makeLenses ''Extremum'
+range ::
+    (BoundedField a) =>
+    Lens' (Extrema a) a
+range =
+    lens
+    (\(Extrema (l,u)) -> (u-l))
+    (\(Extrema (l,u)) r ->
+       Extrema ((l+u)/two - r/two,
+                (l+u)/two + r/two))
 
-extent :: ( AdditiveGroup a
-      , AdditiveHomomorphic (Extremum a) a
-      , Ord a
-      , MultiplicativeGroup a) =>
-      Iso' (Extremum a) (Extremum' a)
-extent = iso toSizeAv toRange
-  where
-    toRange (Extremum' mid s) = Extremum (Minima l, Maxima u)
-      where
-        l = mid - s/(one+one)
-        u = mid + s/(one+one)
-    toSizeAv e = Extremum' (plushom e) (size e)
+instance (Ord a) => AdditiveMagma (Extrema a) where
+    plus (Extrema (l0,u0)) (Extrema (l1,u1)) = Extrema (min l0 l1, max u0 u1)
 
-instance (Ord a) => AdditiveMagma (Extremum a) where
-    plus (Extremum (l,u)) (Extremum (l',u')) = Extremum (l `plus` l', u `plus` u')
+instance (Ord a, BoundedField a) => AdditiveUnital (Extrema a) where
+    zero = Extrema (infinity,neginfinity)
 
-instance (Ord a, BoundedField a) => AdditiveUnital (Extremum a) where
-    zero = Extremum (zero,zero)
+instance (Ord a) => AdditiveAssociative (Extrema a)
+instance (Ord a) => AdditiveCommutative (Extrema a)
+instance (Ord a, BoundedField a) => Additive (Extrema a)
 
-instance (Ord a) => AdditiveAssociative (Extremum a)
-instance (Ord a) => AdditiveCommutative (Extremum a)
-instance (Ord a, BoundedField a) => Additive (Extremum a)
+-- | times may well be some sort of affine transformation lurking under the hood
+instance (Ord a, BoundedField a) => MultiplicativeMagma (Extrema a) where
+    times a b = Extrema (m - r/two, m + r/two)
+        where
+          m = ((view mid a) + (view mid b * view range a))
+          r = view range a * view range b
 
+-- -0.25, 0.5 * 1, 2 >>> 0, 1
 
--- | times is adding the mid-points and timesing the range size
-instance (Ord a, AdditiveGroup a, MultiplicativeGroup a) => MultiplicativeMagma (Extremum a) where
-    times a b = view (Control.Lens.from extent) $ Extremum'
-        (view mid a' + view mid b')
-        (view siz a' * view siz b')
-      where
-        a' = view extent a
-        b' = view extent b
-
--- | given the AdditiveHomomorphic (think average) and Normed formulations a natural multiplicative unital derives from:
+-- | The unital object derives from:
 --
--- size one = one
--- hom one = zero
+-- view range one = one
+-- view mid zero = zero
 -- ie (-0.5,0.5)
-instance (Ord a, BoundedField a) => MultiplicativeUnital (Extremum a) where
-    one = Extremum (Minima (negate one / (one + one)), Maxima (one / (one + one)))
+instance (Ord a, BoundedField a) => MultiplicativeUnital (Extrema a) where
+    one = Extrema (negate half, half)
 
-instance (Additive a, MultiplicativeGroup a) =>
-    AdditiveHomomorphic (Extremum a) a where
-    plushom (Extremum (Minima l,Maxima u)) = (l+u) / (one + one)
+-- | natural interpretation of an Extrema as a number is the mid-point
+instance (BoundedField a) =>
+    AdditiveHomomorphic (Extrema a) a where
+    plushom (Extrema (l,u)) = (l+u) / two
 
-instance (Ord a, AdditiveGroup a, MultiplicativeGroup a) => MultiplicativeAssociative (Extremum a)
-instance (Ord a, AdditiveGroup a, MultiplicativeGroup a) => MultiplicativeCommutative (Extremum a)
+instance (Ord a, BoundedField a) => MultiplicativeAssociative (Extrema a)
+instance (Ord a, BoundedField a) => MultiplicativeCommutative (Extrema a)
 
+instance (Ord a, AdditiveGroup a) => Normed (Extrema a) a where
+    size (Extrema (l, u)) = u-l
 
-instance (Ord a, AdditiveGroup a) => Normed (Extremum a) a where
-    size (Extremum (Minima l, Maxima u)) = u-l
+instance (Ord a, BoundedField a) => MultiplicativeInvertible (Extrema a) where
+    recip a = case view range a == zero of
+      True  -> zero
+      False -> Extrema (m - r/two, m + r/two)
+        where
+          m = negate (view mid a) * recip (view range a)
+          r = recip (view range a)
 
-instance (Ord a, AdditiveGroup a, MultiplicativeGroup a) => MultiplicativeInvertible (Extremum a) where
-    recip a = view (Control.Lens.from extent) $ Extremum'
-        (negate $ view mid a')
-        (recip  $ view siz a')
-      where
-        a' = view extent a
+instance (BoundedField a, Ord a) => Multiplicative (Extrema a)
+instance (BoundedField a, Ord a) => MultiplicativeGroup (Extrema a)
 
-instance (BoundedField a, Ord a) => Multiplicative (Extremum a)
-instance (BoundedField a, Ord a) => MultiplicativeGroup (Extremum a)
+-- | theta is a bit like infinity
+theta :: (AdditiveUnital a) => Extrema a
+theta = Extrema (zero, zero)
 
--- | a weird version of zero, with:
--- - `recip zero'` providing a stable idea of infinity (but with no valid neginfinity)
--- - MathematicalGroup laws work except for `zero'`
--- - annihilation applies: zero' * a = zero'
---
--- all of which implies we have the wrong additive unital element
--- 
-zero' = Extremum {unextremum = (Minima {getMinima = 0},Maxima {getMaxima = 0})}
+two :: (BoundedField a) => a
+two = one + one
 
-infinity' :: Extremum Double
-infinity' = recip zero'
+half :: (BoundedField a) => a
+half = one / (one + one)
