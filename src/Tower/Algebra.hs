@@ -26,6 +26,8 @@ module Tower.Algebra (
   , AdditiveIdempotent(..)
   , AdditiveMonoidal(..)
   , Additive(..)
+  , AdditiveRightCancellative(..)
+  , AdditiveLeftCancellative(..)
   , AdditiveGroup(..)
     -- ** Multiplicative Structure
   , MultiplicativeMagma(..)
@@ -36,6 +38,8 @@ module Tower.Algebra (
   , MultiplicativeHomomorphic(..)
   , MultiplicativeMonoidal(..)
   , Multiplicative(..)
+  , MultiplicativeRightCancellative(..)
+  , MultiplicativeLeftCancellative(..)
   , MultiplicativeGroup(..)
     -- * Distributive
   , Distributive(..)
@@ -274,6 +278,22 @@ instance Additive Float
 instance Additive Int
 instance Additive Integer
 
+class ( AdditiveUnital a
+      , AdditiveAssociative a
+      , AdditiveInvertible a) =>
+      AdditiveLeftCancellative a where
+    infixl 6 ~-
+    (~-) :: a -> a -> a
+    (~-) a b = negate b `plus` a
+
+class ( AdditiveUnital a
+      , AdditiveAssociative a
+      , AdditiveInvertible a) =>
+      AdditiveRightCancellative a where
+    infixl 6 -~
+    (-~) :: a -> a -> a
+    (-~) a b = a `plus` negate b
+
 -- | AdditiveGroup
 --
 -- > a - a = zero
@@ -390,6 +410,22 @@ instance Multiplicative Double
 instance Multiplicative Float
 instance Multiplicative Int
 instance Multiplicative Integer
+
+class ( MultiplicativeUnital a
+      , MultiplicativeAssociative a
+      , MultiplicativeInvertible a) =>
+      MultiplicativeLeftCancellative a where
+    infixl 7 ~/
+    (~/) :: a -> a -> a
+    a ~/ b = recip b `times` a
+
+class ( MultiplicativeUnital a
+      , MultiplicativeAssociative a
+      , MultiplicativeInvertible a) =>
+      MultiplicativeRightCancellative a where
+    infixl 7 /~
+    (/~) :: a -> a -> a
+    a /~ b = a `times` recip b
 
 -- | MultiplicativeGroup
 --

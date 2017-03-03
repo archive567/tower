@@ -24,6 +24,5 @@ import Protolude as X hiding
     )
 
 import Tower.Algebra as X
-import Tower.VectorA as X()
+import Tower.VectorA as X
 import Tower.VectorU as X
-import Tower.Extrema as X

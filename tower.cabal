@@ -45,7 +45,6 @@ library
   exposed-modules:
     Tower.Algebra,
     Tower.Prelude,
-    Tower.Extrema,
     Tower.VectorA,
     Tower.VectorU
   build-depends:
