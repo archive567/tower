@@ -46,7 +46,9 @@ module Tower.Algebra (
     -- * Ring
   , Semiring(..)
   , Ring(..)
+  , CRing(..)
   , Field(..)
+  , fromIntegral
     -- * Module
   , AdditiveBasis(..)
   , AdditiveGroupBasis(..)
@@ -58,6 +60,7 @@ module Tower.Algebra (
   , MultiplicativeGroupModule(..)
     -- * Integral
   , Integral(..)
+  , QuotientField(..)
     -- * Metric
   , Metric(..)
   , Normed(..)
@@ -79,7 +82,7 @@ module Tower.Algebra (
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int, Integer, Applicative(..), Functor(..))
+import Protolude (Double, Float, Int, Integer, Applicative(..), Functor(..), ($), (.))
 
 -- * Magma structure
 -- | A <https://en.wikipedia.org/wiki/Magma_(algebra) Magma> is a tuple (T,⊕) consisting of
@@ -478,24 +481,33 @@ class ( AdditiveGroup a
       , MultiplicativeAssociative a
       , MultiplicativeUnital a
       , Distributive a) =>
-      Ring a
+      Ring a where
+    fromInteger :: Integer -> a
+    fromInteger = slowFromInteger
 
-instance Ring Double
-instance Ring Float
+slowFromInteger :: (Ring r) => Integer -> r
+slowFromInteger i = if i P.> 0
+                    then P.foldl' (+) zero $ P.map (P.const one) [1..i]
+                    else negate $ P.foldl' (+) zero $ P.map (P.const one) [1..negate i]
 
--- | DivisionRing
-class ( AdditiveGroup a
-      , Multiplicative a
-      , Distributive a) =>
-      DivisionRing a
+instance Ring Double where fromInteger = P.fromInteger
+instance Ring Float where fromInteger = P.fromInteger
+instance Ring Int where fromInteger = P.fromInteger
+instance Ring Integer where fromInteger = P.fromInteger
 
-instance DivisionRing Double
-instance DivisionRing Float
+-- | CRing is a Commutative Ring.  It arises often due to * being defined as only multiplicative commutative, yet fromInteger being a `Integer -> Ring` (and thus not necessarily commutative).
+class ( Multiplicative a, Ring a) => CRing a
+
+instance CRing Double
+instance CRing Float
+instance CRing Int
+instance CRing Integer
 
 -- | Field
 class ( AdditiveGroup a
       , MultiplicativeGroup a
-      , Distributive a) =>
+      , Distributive a
+      , Ring a) =>
       Field a
 
 instance Field Double
@@ -594,7 +606,7 @@ class ( Functor m
 -- > b == zero || b * (a `div` b) + (a `mod` b) == a
 -- > b == zero || b * (a `quot` b) + (a `rem` b) == a
 --
-class (Additive a, Multiplicative a) => Integral a where
+class (Ring a) => Integral a where
 
     toInteger :: a -> P.Integer
 
@@ -615,6 +627,44 @@ instance Integral Int where
 instance Integral Integer where
     toInteger = P.toInteger
     divMod = P.divMod
+
+fromIntegral :: (Integral a, Ring b) => a -> b
+fromIntegral = fromInteger . toInteger
+
+class (Ring r, Integral s) => QuotientField r s where
+    truncate :: r -> s
+    round :: r -> s
+    ceiling :: r -> s
+    floor :: r -> s
+    (^^) :: r -> s -> r
+
+instance QuotientField Float Int where
+    truncate = P.truncate
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
+
+instance QuotientField Float Integer where
+    truncate = P.truncate
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
+
+instance QuotientField Double Int where
+    truncate = P.truncate
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
+
+instance QuotientField Double Integer where
+    truncate = P.truncate
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
 
 -- | Metric
 class Metric r m where

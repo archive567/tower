@@ -12,6 +12,11 @@ import Protolude as X hiding
     , negate
     , recip
     , Integral(..)
+    , truncate
+    , round
+    , ceiling
+    , floor
+    , (^^)
     , Semiring(..)
     , log
     , logBase
@@ -21,6 +26,9 @@ import Protolude as X hiding
     , abs
     , (^)
     , infinity
+    , fromIntegral
+    , toInteger
+    , fromInteger
     )
 
 import Tower.Algebra as X
