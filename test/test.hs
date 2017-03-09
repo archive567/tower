@@ -172,7 +172,7 @@ integralLaws ::
     , Integral a
     ) => [Law a]
 integralLaws =
-    [ ("integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a", Binary (\a b -> b == zero || b * (a `div` b) + (a `mod` b) == a))
+    [ ("integral divmod: b == zero || b * (a `div` b) + (a `mod` b) == a", Binary (\a b -> b == zero || b `times` (a `div` b) + (a `mod` b) == a))
    ]
 
 todoLaws ::
