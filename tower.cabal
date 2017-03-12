@@ -44,6 +44,7 @@ library
     src
   exposed-modules:
     Tower.Algebra,
+    Tower.Algebra.Num,
     Tower.Prelude,
     Tower.VectorA,
     Tower.VectorU
