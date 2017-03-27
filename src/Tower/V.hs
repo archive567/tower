@@ -154,7 +154,9 @@ test1 =
     -- putStrLn "How many cats do you own?"
     let c = 5 :: P.Integer in
     case toSing c of
-      SomeSing (SNat :: Sing n) -> ()
+      SomeSing (SNat :: Sing n) -> (T 5 :: T k)
+
+-- https://blog.jle.im/entry/practical-dependent-types-in-haskell-2.html
 
 toTs :: forall n. P.Int -> [P.Maybe (T n)]
 toTs x = P.replicate x (toT x)
