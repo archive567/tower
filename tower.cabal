@@ -46,14 +46,20 @@ library
     Tower.Algebra,
     Tower.Algebra.Num,
     Tower.Prelude,
-    Tower.VectorA,
-    Tower.VectorU
+    Tower.Examples,
+    Tower.V,
+    Tower.M
   build-depends:
     base >= 4.7 && < 5,
     protolude,
     vector,
     QuickCheck,
-    lens
+    lens,
+    adjunctions,
+    distributive,
+    linear,
+    algebra,
+    singletons
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
@@ -86,7 +92,8 @@ library
     ScopedTypeVariables,
     TupleSections,
     TypeFamilies,
-    TypeOperators
+    TypeOperators,
+    ExtendedDefaultRules
 
 test-suite test
   default-language:
@@ -108,7 +115,10 @@ test-suite test
     QuickCheck,
     tasty-quickcheck,
     tower,
-    lens
+    lens,
+    doctest,
+    linear,
+    singletons >= 2.2
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
@@ -141,7 +151,8 @@ test-suite test
     ScopedTypeVariables,
     TupleSections,
     TypeFamilies,
-    TypeOperators
+    TypeOperators,
+    ExtendedDefaultRules
 
 source-repository head
   type:

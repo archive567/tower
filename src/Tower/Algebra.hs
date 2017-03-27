@@ -1,4 +1,6 @@
+{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE PolyKinds #-}
+{-# OPTIONS_GHC -Wall #-}
 
 -- | Algebra
 
@@ -6,25 +8,26 @@ module Tower.Algebra (
     -- * general group structure
     Magma(..)
   , Unital(..)
-  , Associative(..)
-  , Commutative(..)
+  , Associative
+  , Commutative
   , Invertible(..)
-  , Idempotent(..)
+  , Idempotent
   , Homomorphic(..)
-  , Monoidal(..)
-  , CMonoidal(..)
-  , Loop(..)
-  , Group(..)
-  , Abelian(..)
+  , Monoidal
+  , CMonoidal
+  , Loop
+  , Group
+  , groupSwap
+  , Abelian
     -- ** Additive Structure
   , AdditiveMagma(..)
   , AdditiveUnital(..)
-  , AdditiveAssociative(..)
-  , AdditiveCommutative(..)
+  , AdditiveAssociative
+  , AdditiveCommutative
   , AdditiveInvertible(..)
   , AdditiveHomomorphic(..)
-  , AdditiveIdempotent(..)
-  , AdditiveMonoidal(..)
+  , AdditiveIdempotent
+  , AdditiveMonoidal
   , Additive(..)
   , AdditiveRightCancellative(..)
   , AdditiveLeftCancellative(..)
@@ -32,23 +35,44 @@ module Tower.Algebra (
     -- ** Multiplicative Structure
   , MultiplicativeMagma(..)
   , MultiplicativeUnital(..)
-  , MultiplicativeAssociative(..)
-  , MultiplicativeCommutative(..)
+  , MultiplicativeAssociative
+  , MultiplicativeCommutative
   , MultiplicativeInvertible(..)
   , MultiplicativeHomomorphic(..)
-  , MultiplicativeMonoidal(..)
+  , MultiplicativeMonoidal
   , Multiplicative(..)
   , MultiplicativeRightCancellative(..)
   , MultiplicativeLeftCancellative(..)
   , MultiplicativeGroup(..)
-    -- * Distributive
-  , Distributive(..)
+    -- * Distribution
+  , Distribution
     -- * Ring
-  , Semiring(..)
-  , Ring(..)
-  , CRing(..)
-  , Field(..)
+  , Semiring
+  , Ring
+  , CRing
+  , Field
+    -- * Integral
+  , Integral(..)
+  , ToInteger(..)
+  , FromInteger(..)
   , fromIntegral
+  , QuotientField(..)
+    -- * Metric
+  , Bounded(..)
+  , Metric(..)
+  , Normed(..)
+  , abs
+  , Signed(..)
+  , Epsilon(..)
+  , (≈)
+  , Banach(..)
+  , BoundedField(..)
+  , infinity
+  , neginfinity
+    -- * Exponential
+  , ExpRing(..)
+  , (^)
+  , ExpField(..)
     -- * Module
   , AdditiveBasis(..)
   , AdditiveGroupBasis(..)
@@ -58,31 +82,17 @@ module Tower.Algebra (
   , MultiplicativeGroupBasis(..)
   , MultiplicativeModule(..)
   , MultiplicativeGroupModule(..)
-    -- * Integral
-  , Integral(..)
-  , QuotientField(..)
-    -- * Metric
-  , Metric(..)
-  , Normed(..)
-  , abs
-  , Banach(..)
-  , BoundedField(..)
-  , infinity
-  , neginfinity
-    -- * Exponential
-  , ExpRing(..)
-  , (^)
-  , ExpField(..)
-    -- * Tensor Algebra
+    -- * Tensoring
   , Hilbert(..)
-  , TensorAlgebra(..)
-  , squaredInnerProductNorm
-  , innerProductNorm
-  , innerProductDistance
+  , type (><)
+  , TensorProduct(..)
+  , E(..)
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int, Integer, Applicative(..), Functor(..), ($), (.))
+import Protolude (Double, Float, Int, Integer, Functor(..), ($), (.), (<$>), Foldable(..), fst, snd, foldr, const, Bool(..), Ord(..), Eq(..), not, (&&), (||), any)
+import Data.Functor.Rep
+import Data.Distributive
 
 -- * Magma structure
 -- | A <https://en.wikipedia.org/wiki/Magma_(algebra) Magma> is a tuple (T,⊕) consisting of
@@ -103,6 +113,8 @@ import Protolude (Double, Float, Int, Integer, Applicative(..), Functor(..), ($)
 --
 -- These laws are true by construction in haskell: the type signature of 'magma' and the above mathematical laws are synonyms.
 --
+--
+
 class Magma a where (⊕) :: a -> a -> a
 
 -- | A Unital Magma
@@ -188,12 +200,15 @@ class ( Associative a
 -- The Magma structures are repeated for an additive and multiplicative heirarchy, mostly so we can name the specific operators in the usual ways.
 --
 -- | 'plus' is used for the additive magma to distinguish from '+' which, by convention, implies commutativity
+
 class AdditiveMagma a where plus :: a -> a -> a
 
 instance AdditiveMagma Double where plus = (P.+)
 instance AdditiveMagma Float where plus = (P.+)
 instance AdditiveMagma Int where plus = (P.+)
 instance AdditiveMagma Integer where plus = (P.+)
+instance (Representable r, AdditiveMagma a) => AdditiveMagma (r a) where
+    plus = liftR2 plus
 
 -- | AdditiveUnital
 --
@@ -205,6 +220,8 @@ instance AdditiveUnital Double where zero = 0
 instance AdditiveUnital Float where zero = 0
 instance AdditiveUnital Int where zero = 0
 instance AdditiveUnital Integer where zero = 0
+instance (Representable r, AdditiveUnital a) => AdditiveUnital (r a) where
+    zero = pureRep zero
 
 -- | AdditiveAssociative
 --
@@ -215,6 +232,7 @@ instance AdditiveAssociative Double
 instance AdditiveAssociative Float
 instance AdditiveAssociative Int
 instance AdditiveAssociative Integer
+instance (Representable r, AdditiveAssociative a) => AdditiveAssociative (r a)
 
 -- | AdditiveCommutative
 --
@@ -225,6 +243,7 @@ instance AdditiveCommutative Double
 instance AdditiveCommutative Float
 instance AdditiveCommutative Int
 instance AdditiveCommutative Integer
+instance (Representable r, AdditiveCommutative a) => AdditiveCommutative (r a)
 
 -- | AdditiveInvertible
 --
@@ -237,6 +256,8 @@ instance AdditiveInvertible Double where negate = P.negate
 instance AdditiveInvertible Float where negate = P.negate
 instance AdditiveInvertible Int where negate = P.negate
 instance AdditiveInvertible Integer where negate = P.negate
+instance (Representable r, AdditiveInvertible a) => AdditiveInvertible (r a) where
+    negate a = fmapRep negate a
 
 -- | AdditiveHomomorphic
 --
@@ -247,6 +268,8 @@ class (AdditiveMagma b) => AdditiveHomomorphic a b where
     plushom :: a -> b
 
 instance AdditiveMagma a => AdditiveHomomorphic a a where plushom a = a
+instance (Representable r, AdditiveMagma a) => AdditiveHomomorphic a (r a) where
+    plushom a = pureRep a
 
 -- | AdditiveIdempotent
 --
@@ -280,6 +303,7 @@ instance Additive Double
 instance Additive Float
 instance Additive Int
 instance Additive Integer
+instance (Representable r, Additive a) => Additive (r a)
 
 class ( AdditiveUnital a
       , AdditiveAssociative a
@@ -316,13 +340,7 @@ instance AdditiveGroup Double
 instance AdditiveGroup Float
 instance AdditiveGroup Int
 instance AdditiveGroup Integer
-
-class (AdditiveGroup a) => Epsilon a where eps :: a
-
-instance Epsilon Double where eps = 1e-8
-instance Epsilon Float where eps = 1e-8
-instance Epsilon Int where eps = zero
-instance Epsilon Integer where eps = zero
+instance (Representable r, AdditiveGroup a) => AdditiveGroup (r a)
 
 -- * Multiplicative structure
 -- | 'times' is used for the multiplicative magma to distinguish from '*' which, by convention, implies commutativity
@@ -332,6 +350,8 @@ instance MultiplicativeMagma Double where times = (P.*)
 instance MultiplicativeMagma Float where times = (P.*)
 instance MultiplicativeMagma Int where times = (P.*)
 instance MultiplicativeMagma Integer where times = (P.*)
+instance (Representable r, MultiplicativeMagma a) => MultiplicativeMagma (r a) where
+    times = liftR2 times
 
 -- | MultiplicativeUnital
 --
@@ -343,6 +363,9 @@ instance MultiplicativeUnital Double where one = 1
 instance MultiplicativeUnital Float where one = 1
 instance MultiplicativeUnital Int where one = 1
 instance MultiplicativeUnital Integer where one = 1
+instance (Representable r, MultiplicativeUnital a) =>
+    MultiplicativeUnital (r a) where
+    one = pureRep one
 
 -- | MultiplicativeCommutative
 --
@@ -353,6 +376,8 @@ instance MultiplicativeCommutative Double
 instance MultiplicativeCommutative Float
 instance MultiplicativeCommutative Int
 instance MultiplicativeCommutative Integer
+instance (Representable r, MultiplicativeCommutative a) =>
+    MultiplicativeCommutative (r a)
 
 -- | MultiplicativeAssociative
 --
@@ -363,6 +388,8 @@ instance MultiplicativeAssociative Double
 instance MultiplicativeAssociative Float
 instance MultiplicativeAssociative Int
 instance MultiplicativeAssociative Integer
+instance (Representable r, MultiplicativeAssociative a) =>
+    MultiplicativeAssociative (r a)
 
 -- | MultiplicativeInvertible
 --
@@ -373,6 +400,9 @@ class MultiplicativeMagma a => MultiplicativeInvertible a where recip :: a -> a
 
 instance MultiplicativeInvertible Double where recip = P.recip
 instance MultiplicativeInvertible Float where recip = P.recip
+instance (Representable r, MultiplicativeInvertible a) =>
+    MultiplicativeInvertible (r a) where
+    recip = fmapRep recip
 
 -- | MultiplicativeHomomorphic
 --
@@ -382,6 +412,10 @@ instance MultiplicativeInvertible Float where recip = P.recip
 class ( MultiplicativeMagma b) =>
       MultiplicativeHomomorphic a b where
     timeshom :: a -> b
+
+instance (Representable r, MultiplicativeMagma a) =>
+    MultiplicativeHomomorphic a (r a) where
+    timeshom a = pureRep a
 
 instance MultiplicativeMagma a => MultiplicativeHomomorphic a a where
     timeshom a = a
@@ -413,6 +447,7 @@ instance Multiplicative Double
 instance Multiplicative Float
 instance Multiplicative Int
 instance Multiplicative Integer
+instance (Representable r, Multiplicative a) => Multiplicative (r a)
 
 class ( MultiplicativeUnital a
       , MultiplicativeAssociative a
@@ -447,8 +482,9 @@ class ( Multiplicative a
 
 instance MultiplicativeGroup Double
 instance MultiplicativeGroup Float
+instance (Representable r, MultiplicativeGroup a) => MultiplicativeGroup (r a)
 
--- | Distributive
+-- | Distribution
 --
 -- > a . (b + c) == a . b + a . c
 --
@@ -457,43 +493,39 @@ instance MultiplicativeGroup Float
 class (
     Additive a
   , MultiplicativeMagma a
-  ) => Distributive a
+  ) => Distribution a
 
-instance Distributive Double
-instance Distributive Float
-instance Distributive Int
-instance Distributive Integer
+instance Distribution Double
+instance Distribution Float
+instance Distribution Int
+instance Distribution Integer
+instance (Representable r, Distribution a) => Distribution (r a)
 
 -- | a semiring
 class ( Additive a
       , MultiplicativeAssociative a
       , MultiplicativeUnital a
-      , Distributive a) =>
+      , Distribution a) =>
       Semiring a
 
 instance Semiring Double
 instance Semiring Float
 instance Semiring Int
 instance Semiring Integer
+instance (Representable r, Semiring a) => Semiring (r a)
 
 -- | Ring
 class ( AdditiveGroup a
       , MultiplicativeAssociative a
       , MultiplicativeUnital a
-      , Distributive a) =>
-      Ring a where
-    fromInteger :: Integer -> a
-    fromInteger = slowFromInteger
+      , Distribution a) =>
+      Ring a
 
-slowFromInteger :: (Ring r) => Integer -> r
-slowFromInteger i = if i P.> 0
-                    then P.foldl' (+) zero $ P.map (P.const one) [1..i]
-                    else negate $ P.foldl' (+) zero $ P.map (P.const one) [1..negate i]
-
-instance Ring Double where fromInteger = P.fromInteger
-instance Ring Float where fromInteger = P.fromInteger
-instance Ring Int where fromInteger = P.fromInteger
-instance Ring Integer where fromInteger = P.fromInteger
+instance Ring Double
+instance Ring Float
+instance Ring Int
+instance Ring Integer
+instance (Representable r, Ring a) => Ring (r a)
 
 -- | CRing is a Commutative Ring.  It arises often due to * being defined as only multiplicative commutative, yet fromInteger being a `Integer -> Ring` (and thus not necessarily commutative).
 class ( Multiplicative a, Ring a) => CRing a
@@ -502,220 +534,190 @@ instance CRing Double
 instance CRing Float
 instance CRing Int
 instance CRing Integer
+instance (Representable r, CRing a) => CRing (r a)
 
 -- | Field
 class ( AdditiveGroup a
       , MultiplicativeGroup a
-      , Distributive a
+      , Distribution a
       , Ring a) =>
       Field a
 
 instance Field Double
 instance Field Float
-
--- * Additive Module Structure
-
--- | AdditiveBasis
--- element by element addition
-class ( Applicative m
-      , Additive a ) =>
-      AdditiveBasis m a where
-    infixl 7 .+.
-    (.+.) :: m a -> m a -> m a
-    (.+.) = P.liftA2 (+)
-
--- | AdditiveGroupBasis
--- element by element subtraction
-class ( Applicative m
-      , AdditiveGroup a ) =>
-      AdditiveGroupBasis m a where
-    infixl 6 .-.
-    (.-.) :: m a -> m a -> m a
-    (.-.) = P.liftA2 (-)
-
--- | AdditiveModule
-class ( Functor m
-      , Additive a) =>
-      AdditiveModule m a where
-    infixl 6 .+
-    (.+) :: AdditiveModule m a => m a -> a -> m a
-    m .+ a = fmap (a+) m
-
-    infixl 6 +.
-    (+.) :: AdditiveModule m a => a -> m a -> m a
-    a +. m = fmap (a+) m
-
--- | AdditiveGroupModule
-class ( Functor m
-      , AdditiveGroup a) =>
-      AdditiveGroupModule m a where
-    infixl 6 .-
-    (.-) :: AdditiveModule m a => m a -> a -> m a
-    m .- a = fmap (\x -> x - a) m
-
-    infixl 6 -.
-    (-.) :: AdditiveModule m a => a -> m a -> m a
-    a -. m = fmap (\x -> a - x) m
-
--- * Multiplicative Module Structure
-
--- | MultiplicativeBasis
--- element by element multiplication
-class ( Applicative m
-      , Multiplicative a ) =>
-      MultiplicativeBasis m a where
-    infixl 7 .*.
-    (.*.) :: m a -> m a -> m a
-    (.*.) = P.liftA2 (*)
-
--- | MultiplicativeGroupBasis
--- element by element division
-class ( Applicative m
-      , MultiplicativeGroup a ) =>
-      MultiplicativeGroupBasis m a where
-    infixl 7 ./.
-    (./.) :: m a -> m a -> m a
-    (./.) = P.liftA2 (/)
-
--- | MultiplicativeModule
-class ( Functor m
-      , Multiplicative a) =>
-      MultiplicativeModule m a where
-    infixl 7 .*
-    (.*) :: MultiplicativeModule m a => m a -> a -> m a
-    m .* a = fmap (a*) m
-
-    infixl 7 *.
-    (*.) :: MultiplicativeModule m a => a -> m a -> m a
-    a *. m = fmap (a*) m
-
--- | MultiplicativeGroupModule
-class ( Functor m
-      , MultiplicativeGroup a) =>
-      MultiplicativeGroupModule m a where
-    infixl 7 ./
-    (./) :: MultiplicativeModule m a => m a -> a -> m a
-    m ./ a = fmap (/ a) m
-
-    infixl 7 /.
-    (/.) :: MultiplicativeModule m a => a -> m a -> m a
-    a /. m = fmap (\x -> a / x) m
+instance (Representable r, Field a) => Field (r a)
 
 -- | Integral
 --
 -- > b == zero || b * (a `div` b) + (a `mod` b) == a
--- > b == zero || b * (a `quot` b) + (a `rem` b) == a
 --
 class (Ring a) => Integral a where
-
-    toInteger :: a -> P.Integer
 
     infixl 7 `div`, `mod`
 
     -- | truncates towards negative infinity
     div :: a -> a -> a
-    div a1 a2 = P.fst (divMod a1 a2)
+    div a1 a2 = fst (divMod a1 a2)
     mod :: a -> a -> a
-    mod a1 a2 = P.snd (divMod a1 a2)
+    mod a1 a2 = snd (divMod a1 a2)
 
     divMod :: a -> a -> (a,a)
- 
-instance Integral Int where
-    toInteger = P.toInteger
-    divMod = P.divMod
 
-instance Integral Integer where
-    toInteger = P.toInteger
-    divMod = P.divMod
+instance Integral Int where divMod = P.divMod
+instance Integral Integer where divMod = P.divMod
 
-fromIntegral :: (Integral a, Ring b) => a -> b
+instance (Representable r, Integral a) => Integral (r a) where
+    divMod a b = (d,m)
+        where
+          x = liftR2 divMod a b
+          d = fmap fst x
+          m = fmap snd x
+
+class (Integral a) => ToInteger a where
+    toInteger :: a -> Integer
+
+class (Ring a) => FromInteger a where
+    fromInteger :: Integer -> a
+    fromInteger = slowFromInteger
+
+slowFromInteger :: (Ring r) => Integer -> r
+slowFromInteger i = if i > zero
+                    then foldr (+) zero $ fmap (const one) [one..i]
+                    else negate $ foldr (+) zero $ fmap (const one) [one..negate i]
+
+fromIntegral :: (ToInteger a, FromInteger b) => a -> b
 fromIntegral = fromInteger . toInteger
 
-class (Ring r, Integral s) => QuotientField r s where
-    truncate :: r -> s
-    round :: r -> s
-    ceiling :: r -> s
-    floor :: r -> s
-    (^^) :: r -> s -> r
+instance FromInteger Double where fromInteger = P.fromInteger
+instance FromInteger Float where fromInteger = P.fromInteger
+instance FromInteger Int where fromInteger = P.fromInteger
+instance FromInteger Integer where fromInteger = P.fromInteger
 
-instance QuotientField Float Int where
-    truncate = P.truncate
-    round = P.round
-    ceiling = P.ceiling
-    floor = P.floor
-    (^^) = (P.^^)
+instance ToInteger Int where toInteger = P.toInteger
+instance ToInteger Integer where toInteger = P.toInteger
 
-instance QuotientField Float Integer where
-    truncate = P.truncate
-    round = P.round
-    ceiling = P.ceiling
-    floor = P.floor
-    (^^) = (P.^^)
+class (Field a) => Bounded a where
+    maxBound :: a
+    maxBound = one/zero
+    minBound :: a
+    minBound = negate (one/zero)
 
-instance QuotientField Double Int where
-    truncate = P.truncate
-    round = P.round
-    ceiling = P.ceiling
-    floor = P.floor
-    (^^) = (P.^^)
-
-instance QuotientField Double Integer where
-    truncate = P.truncate
-    round = P.round
-    ceiling = P.ceiling
-    floor = P.floor
-    (^^) = (P.^^)
-
--- | Metric
-class Metric r m where
-    distance :: m -> m -> r
+instance Bounded Float
+instance Bounded Double
+instance (Field a, Representable r) => Bounded (r a) where
+    maxBound = one/zero
+    minBound = negate (one/zero)
 
 -- | Normed
 class Normed a b where
     size :: a -> b
 
--- | abs
-abs :: Normed a b => a -> b
+instance Normed Double Double where size = P.abs
+instance Normed Float Float where size = P.abs
+instance Normed Int Int where size = P.abs
+instance Normed Integer Integer where size = P.abs
+instance (Foldable r, Representable r, ExpField a, ExpRing a) =>
+    Normed (r a) a where
+    size r = sqrt $ foldr (+) zero $ (**(one+one)) <$> r
+
+abs :: (Normed a a) => a -> a
 abs = size
 
--- | Banach
-class ( MultiplicativeGroup a
-      , MultiplicativeModule m a
-      , MultiplicativeGroupModule m a
-      , MultiplicativeInvertible a
-      , Normed (m a) a) =>
-      Banach m a where
-    normalize :: m a -> m a
-    normalize a = a ./ size a
+instance (Normed a a, Representable r) => Normed (r a) (r a) where
+    size = fmapRep abs
+
+class ( Ord a
+      , AdditiveUnital a
+      , AdditiveGroup a
+      , Multiplicative a
+      ) => Signed a where
+    sign :: a -> a
+    sign a = if a >= zero then one else negate one
+
+instance Signed Double
+instance Signed Float
+instance Signed Int
+instance Signed Integer
+
+-- | Epsilon
+class (AdditiveGroup a, Ord a, Signed a) => Epsilon a where
+    nearZero :: a -> Bool
+    nearZero a = a == zero
+
+    aboutEqual :: a -> a -> Bool
+    aboutEqual a b = nearZero $ a - b
+
+    prettyPositive :: a -> Bool
+    prettyPositive a = not (nearZero a) && a > zero
+
+    kindaPositive :: a -> Bool
+    kindaPositive a = nearZero a || a > zero
+
+infixl 4 ≈
+
+(≈) :: (Epsilon a) => a -> a -> Bool
+(≈) = aboutEqual
+
+instance Epsilon Double where nearZero a = abs a <= (1e-12 :: Double)
+instance Epsilon Float where nearZero a = abs a <= (1e-6 :: Float)
+instance Epsilon Int
+instance Epsilon Integer
+
+-- | Metric
+class Metric a b where
+    distance :: a -> a -> b
+
+instance Metric Double Double where distance a b = abs (a - b)
+instance Metric Float Float where distance a b = abs (a - b)
+instance Metric Int Int where distance a b = abs (a - b)
+instance Metric Integer Integer where distance a b = abs (a - b)
+
+instance (P.Foldable r, Representable r, ExpField a) => Metric (r a) a where
+    distance a b = size (a - b)
 
 -- | BoundedField
 class ( Field a
-      , P.Bounded a) =>
+      , Bounded a) =>
       BoundedField a where
     nan :: a
     nan = zero/zero
 
-instance P.Bounded Float where
-    maxBound = one/zero
-    minBound = negate (one/zero)
-instance BoundedField Float
+    isNaN :: a -> Bool
 
-instance P.Bounded Double where
-    maxBound = one/zero
-    minBound = negate (one/zero)
-instance BoundedField Double
-
--- | infinity
 infinity :: BoundedField a => a
-infinity = P.maxBound
+infinity = maxBound
 
 neginfinity :: BoundedField a => a
-neginfinity = P.minBound
+neginfinity = minBound
+
+instance BoundedField Float where isNaN = P.isNaN
+instance BoundedField Double where isNaN = P.isNaN
+instance (Foldable r, Representable r, BoundedField a) =>
+    BoundedField (r a) where
+    isNaN a = any isNaN a
+
+class (Ring a) => QuotientField a where
+    round :: a -> Integer
+    ceiling :: a -> Integer
+    floor :: a -> Integer
+    (^^) :: a -> Integer -> a
+
+instance QuotientField Float where
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
+
+instance QuotientField Double where
+    round = P.round
+    ceiling = P.ceiling
+    floor = P.floor
+    (^^) = (P.^^)
 
 -- | ExpRing
 class Ring a => ExpRing a where
     logBase :: a -> a -> a
-    (**) :: ExpRing a => a -> a -> a
+    (**) :: a -> a -> a
 
 -- | (^)
 (^) :: ExpRing a => a -> a -> a
@@ -727,13 +729,16 @@ instance ExpRing Double where
 instance ExpRing Float where
     logBase = P.logBase
     (**) = (P.**)
+instance (Representable r, ExpRing a) => ExpRing (r a) where
+    logBase = liftR2 logBase
+    (**)  = liftR2 (**)
 
 -- | ExpField
 class ( Field a
       , ExpRing a ) =>
       ExpField a where
     sqrt :: a -> a
-    sqrt a = a**(one/one+one)
+    sqrt a = a**(one/(one+one))
 
     exp :: a -> a
     log :: a -> a
@@ -746,29 +751,169 @@ instance ExpField Float where
     exp = P.exp
     log = P.log
 
--- | ><
-infixl 8 ><
+instance (Representable r, ExpField a) => ExpField (r a) where
+    exp = fmap exp
+    log = fmap log
+
+-- * Additive Module Structure
+
+-- | AdditiveBasis
+-- element by element addition
+class ( Representable m
+      , Additive a ) =>
+      AdditiveBasis m a where
+    infixl 7 .+.
+    (.+.) :: m a -> m a -> m a
+    (.+.) = liftR2 (+)
+
+instance (Representable r, Additive a) => AdditiveBasis r a
+
+-- | AdditiveGroupBasis
+-- element by element subtraction
+class ( Representable m
+      , AdditiveGroup a ) =>
+      AdditiveGroupBasis m a where
+    infixl 6 .-.
+    (.-.) :: m a -> m a -> m a
+    (.-.) = liftR2 (-)
+
+instance (Representable r, AdditiveGroup a) => AdditiveGroupBasis r a
+
+-- | AdditiveModule
+class ( Representable m
+      , Additive a) =>
+      AdditiveModule m a where
+    infixl 6 .+
+    (.+) :: m a -> a -> m a
+    m .+ a = fmap (a+) m
+
+    infixl 6 +.
+    (+.) :: a -> m a -> m a
+    a +. m = fmap (a+) m
+
+instance (Representable r, Additive a) => AdditiveModule r a
+
+-- | AdditiveGroupModule
+class ( Representable m
+      , AdditiveGroup a) =>
+      AdditiveGroupModule m a where
+    infixl 6 .-
+    (.-) :: m a -> a -> m a
+    m .- a = fmap (\x -> x - a) m
+
+    infixl 6 -.
+    (-.) :: a -> m a -> m a
+    a -. m = fmap (\x -> a - x) m
+
+instance (Representable r, AdditiveGroup a) => AdditiveGroupModule r a
+
+-- * Multiplicative Module Structure
+
+-- | MultiplicativeBasis
+-- element by element multiplication
+class ( Representable m
+      , Multiplicative a ) =>
+      MultiplicativeBasis m a where
+    infixl 7 .*.
+    (.*.) :: m a -> m a -> m a
+    (.*.) = liftR2 (*)
+
+instance (Representable r, Multiplicative a) => MultiplicativeBasis r a
+
+-- | MultiplicativeGroupBasis
+-- element by element division
+class ( Representable m
+      , MultiplicativeGroup a ) =>
+      MultiplicativeGroupBasis m a where
+    infixl 7 ./.
+    (./.) :: m a -> m a -> m a
+    (./.) = liftR2 (/)
+
+instance (Representable r, MultiplicativeGroup a) => MultiplicativeGroupBasis r a
+
+-- | MultiplicativeModule
+class ( Representable m
+      , Multiplicative a) =>
+      MultiplicativeModule m a where
+    infixl 7 .*
+    (.*) :: m a -> a -> m a
+    m .* a = fmap (a*) m
+
+    infixl 7 *.
+    (*.) :: a -> m a -> m a
+    a *. m = fmap (a*) m
+
+instance (Representable r, Multiplicative a) => MultiplicativeModule r a
+
+-- | MultiplicativeGroupModule
+class ( Representable m
+      , MultiplicativeGroup a) =>
+      MultiplicativeGroupModule m a where
+    infixl 7 ./
+    (./) :: m a -> a -> m a
+    m ./ a = fmap (/ a) m
+
+    infixl 7 /.
+    (/.) :: a -> m a -> m a
+    a /. m = fmap (\x -> a / x) m
+
+instance (Representable r, MultiplicativeGroup a) => MultiplicativeGroupModule r a
+
+-- | Banach
+class ( MultiplicativeGroup a
+      , MultiplicativeModule m a
+      , MultiplicativeGroupModule m a
+      , MultiplicativeInvertible a
+      , Normed (m a) a) =>
+      Banach m a where
+    normalize :: m a -> m a
+    normalize a = a ./ size a
+
+instance (Foldable r, Representable r, ExpField a) => Banach r a
+
+-- | Hilbert
+class (AdditiveGroup (m a)) => Hilbert m a where
+    infix 8 <.>
+    (<.>) :: m a -> m a -> a
+
+instance (Foldable r, Representable r, CRing a) =>
+    Hilbert r a where
+    (<.>) a b = foldl' (+) zero $ liftR2 (*) a b
+
+-- | tensorial tomfoolery
 type family (><) (a::k1) (b::k2) :: *
 
+type instance Int >< Int = Int
+type instance Integer >< Integer = Integer
+type instance Double >< Double = Double
+type instance Float >< Float = Float
+
+type family TensorRep k1 k2 where
+    TensorRep (r a) (r a) = r (r a)
+    TensorRep (r a) a = r a
+
+type instance r a >< b = TensorRep (r a) b
+
 -- | TensorAlgebra
-class TensorAlgebra a where
+class TensorProduct a where
+    infix 8 ><
     (><) :: a -> a -> (a><a)
     timesleft :: a -> (a><a) -> a
     timesright :: (a><a) -> a -> a
 
--- | Hilbert
-class (Banach m a, TensorAlgebra a, ExpField r, AdditiveGroup (m a)) => Hilbert m a r where
-    infix 8 <?>
-    (<?>) :: m a -> m a -> r
+instance (Foldable r, Representable r, CRing a ) =>
+    TensorProduct (r a)
+  where
+    (><) m n = tabulate (\i -> index m i *. n)
+    timesleft v m = tabulate (\i -> v <.> index m i)
+    timesright m v = tabulate (\i -> v <.> index m i)
 
--- | squaredInnerProductNorm 
-squaredInnerProductNorm :: Hilbert m v r => m v -> r
-squaredInnerProductNorm v = v <?> v
+newtype E a = E { e :: a } deriving (Functor)
 
--- | innerProductNorm 
-innerProductNorm :: (Hilbert m v r) => m v -> r
-innerProductNorm = sqrt P.. squaredInnerProductNorm
+instance Distributive E where
+  distribute = E . fmap (\(E x) -> x)
 
--- | innerProductDistance
-innerProductDistance :: Hilbert m v r => m v -> m v -> r
-innerProductDistance v1 v2 = innerProductNorm (v1 - v2)
+instance Representable E where
+  type Rep E = ()
+  tabulate f = E (f ())
+  index (E x) () = x

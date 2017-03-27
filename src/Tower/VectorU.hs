@@ -1,7 +1,9 @@
+{-# LANGUAGE RoleAnnotations #-}
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | unboxed vector
 
@@ -20,9 +22,17 @@ import Data.Vector.Unboxed as V
 import Data.Proxy (Proxy(..))
 import Test.QuickCheck
 
+newtype VectorU (n :: Nat) a = VectorU { toVector :: Vector a } deriving (Eq,P.Ord,Show,P.Read,P.Typeable,P.NFData,P.Generic)
+
+class Dim n where
+    reflectDim :: p n -> P.Int
+
+-- type role V nominal representational
+
+
 -- newtype VectorU' n a = VectorU' { unvec :: (KnownNat n, Unbox a) => Vector a}
 -- | wrapped fixed-size unboxed vector
-data VectorU (n :: Nat) a = VectorU { v :: Vector a} deriving (Eq, Show)
+-- data VectorU (n :: Nat) a = VectorU { v :: Vector a} deriving (Eq, Show)
 
 -- instance Functor (VectorU' n) where
 --      fmap f (VectorU' v) = VectorU' (map f v)

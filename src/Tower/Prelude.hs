@@ -12,7 +12,6 @@ import Protolude as X hiding
     , negate
     , recip
     , Integral(..)
-    , truncate
     , round
     , ceiling
     , floor
@@ -26,11 +25,13 @@ import Protolude as X hiding
     , abs
     , (^)
     , infinity
+    , Bounded(..)
+    , isNaN
     , fromIntegral
     , toInteger
     , fromInteger
     )
 
 import Tower.Algebra as X
-import Tower.VectorA as X
-import Tower.VectorU as X
+import Tower.V as X
+import Tower.M as X

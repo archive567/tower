@@ -1,4 +1,4 @@
-<meta charset="utf-8"> <link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
+<link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
 <script type="text/javascript" async
   src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
@@ -10,40 +10,10 @@
 <img src="https://tonyday567.github.io/other/field-tower.svg" />
 
 </div>
-<p>To use the library:</p>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# OPTIONS_GHC -fno-warn-type-defaults #-}</span>
+<span class="ot">{-# LANGUAGE ExtendedDefaultRules #-}</span>
 <span class="ot">{-# LANGUAGE NoImplicitPrelude #-}</span>
-<span class="kw">import </span><span class="dt">Tower.Prelude</span></code></pre></div>
-<p><code>Tower.Prelude</code> is a drop-in replacement for <code>Prelude</code>. Behind the scenes, it wraps <code>Protolude</code>. <code>Monoid</code> and <code>Semigroup</code> do not exist in the tower, to avoid trampling on base.</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">
-<span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span></code></pre></div>
-<p>To use literal numbers with tower without a type annotation somewhere, type defaulting as per Num needs to be applied to Additive.</p>
-<pre><code>:t 1 + 1
-1 + 1 :: (Additive a, Num a) =&gt; a</code></pre>
-<p><code>tower</code> awaits OverloadedNums to be practical...</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">  putStrLn <span class="fu">$</span> <span class="st">&quot;1 + 1      = &quot;</span> <span class="fu">++</span> show (<span class="dv">1</span> <span class="fu">+</span> <span class="dv">1</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;1.0 + 1.0  = &quot;</span> <span class="fu">++</span> show (<span class="fl">1.0</span> <span class="fu">+</span> <span class="fl">1.0</span><span class="ot"> ::</span> <span class="dt">Float</span>)</code></pre></div>
-<p><code>-</code> as a unary function, and a minus literal eg <code>-1</code> is treated specially by ghc, and also differently to one another.</p>
-<pre><code>:t - 1
-- 1 :: Num a =&gt; a
-:t -1
--1 :: Num t =&gt; t</code></pre>
-<p>The upshot of this, is that the unary function <code>-</code> is not yet hooking into tower, despite <code>(-)</code> and <code>negate</code> being hidden in the import of protolude.</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">  putStrLn <span class="fu">$</span> <span class="st">&quot;-1         = &quot;</span> <span class="fu">++</span> show (<span class="fu">-</span> <span class="dv">1</span>)</code></pre></div>
-<p>The binary function <code>-</code> is ok.</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">  putStrLn <span class="fu">$</span> <span class="st">&quot;1 - 1      = &quot;</span> <span class="fu">++</span> show (<span class="dv">1</span> <span class="fu">-</span> <span class="dv">1</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;1.0 - 1.0  = &quot;</span> <span class="fu">++</span> show (<span class="fl">1.0</span> <span class="fu">-</span> <span class="fl">1.0</span><span class="ot"> ::</span> <span class="dt">Float</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;1 * 1      = &quot;</span> <span class="fu">++</span> show (<span class="dv">1</span> <span class="fu">*</span> <span class="dv">1</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;1.0 * 1.0  = &quot;</span> <span class="fu">++</span> show (<span class="fl">1.0</span> <span class="fu">*</span> <span class="fl">1.0</span><span class="ot"> ::</span> <span class="dt">Float</span>)
-  putStrLn <span class="fu">$</span> (<span class="st">&quot;1 / 1 is a type error&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;1.0 / 1.0  = &quot;</span> <span class="fu">++</span> show (<span class="fl">1.0</span> <span class="fu">/</span> <span class="fl">1.0</span><span class="ot"> ::</span> <span class="dt">Float</span>)</code></pre></div>
-<p>Using <code>zero</code> and <code>one</code> rather than magical <code>0</code>s and <code>1</code>s in code is great practice.</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">  putStrLn <span class="fu">$</span> <span class="st">&quot;zero       = &quot;</span> <span class="fu">++</span> show (<span class="ot">zero ::</span> <span class="dt">Float</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;one        = &quot;</span> <span class="fu">++</span> show (<span class="ot">one ::</span> <span class="dt">Float</span>)</code></pre></div>
-<p>BoundedField ensures that divide by zero works. Having said this, actually printing one/zero as <code>Infinity</code> and -one/zero as <code>-Infinity</code> ain't coming from tower.</p>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell">  putStrLn <span class="fu">$</span> <span class="st">&quot;one / zero = &quot;</span> <span class="fu">++</span> show (one <span class="fu">/</span><span class="ot"> zero ::</span> <span class="dt">Float</span>)
-  putStrLn <span class="fu">$</span> <span class="st">&quot;(zero / zero) + one = &quot;</span> <span class="fu">++</span> show (zero <span class="fu">/</span> zero <span class="fu">+</span><span class="ot"> one ::</span> <span class="dt">Float</span>)</code></pre></div>
-<h2 id="footnotes">footnotes</h2>
-<p>To render readme.md etc:</p>
-<pre><code>stack build --test --exec &quot;pandoc -f markdown+lhs -i examples/examples.lhs -t html -o index.html --filter pandoc-include --mathjax&quot; --exec &quot;pandoc -f markdown+lhs -i examples/examples.lhs -t markdown -o readme.md --filter pandoc-include --mathjax&quot; --exec &quot;echo Yah, it succeeded&quot; --file-watch</code></pre>
+<span class="ot">{-# LANGUAGE DataKinds #-}</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Tower.Prelude</span></code></pre></div>
+<p><code>Tower.Prelude</code> is a drop-in replacement for <code>Prelude</code>. Behind the scenes, it wraps <code>Protolude</code>.</p>
+<pre><code>stack build --test --exec &quot;pandoc -f markdown -i readme.md -t html -o index.html --filter pandoc-include --mathjax&quot;</code></pre>
