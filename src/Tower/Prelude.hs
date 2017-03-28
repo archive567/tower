@@ -30,8 +30,11 @@ import Protolude as X hiding
     , fromIntegral
     , toInteger
     , fromInteger
+    , Rep
     )
 
 import Tower.Algebra as X
 import Tower.V as X
 import Tower.M as X
+import Data.Functor.Rep as X
+import Data.Distributive as X

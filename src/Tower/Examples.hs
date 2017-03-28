@@ -245,5 +245,9 @@ import Tower.Prelude
 -- >>> a <.> b :: Float
 -- 10.0
 --
+-- >>> (a >< b) >< (b >< a)
+-- V {toVector = [V {toVector = [V {toVector = [9.0,12.0,9.0]},V {toVector = [18.0,24.0,18.0]},V {toVector = [27.0,36.0,27.0]}]},V {toVector = [V {toVector = [6.0,8.0,6.0]},V {toVector = [12.0,16.0,12.0]},V {toVector = [18.0,24.0,18.0]}]},V {toVector = [V {toVector = [3.0,4.0,3.0]},V {toVector = [6.0,8.0,6.0]},V {toVector = [9.0,12.0,9.0]}]}]}
+--
+
 
 

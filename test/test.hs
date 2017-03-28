@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main where
@@ -36,7 +37,7 @@ testLawOf _ (name, Ornary f) = testProperty name f
 testLawOf _ (name, Failiary f) = testProperty name f
 
 tests :: TestTree
-tests = testGroup "everything" [testsInt, testsFloat]
+tests = testGroup "everything" [testsInt, testsFloat, testsVInt, testsVFloat, testsMInt, testsMFloat]
 
 testsInt :: TestTree
 testsInt = testGroup "Int"
@@ -49,7 +50,7 @@ testsInt = testGroup "Int"
     , testGroup "MultiplicativeGroup" $ testLawOf ([]::[Float]) <$>
       multiplicativeGroupLaws
     , testGroup "Distributive" $ testLawOf ([]::[Int])
-      <$> distributiveLaws
+      <$> distributionLaws
     , testGroup "Integral" $ testLawOf ([]::[Int]) <$>
       integralLaws
     , testGroup "Signed" $ testLawOf ([]::[Int]) <$>
@@ -73,31 +74,76 @@ testsFloat = testGroup "Float"
       signedLaws
     , testGroup "Bounded Field" $ testLawOf ([]::[Float]) <$>
       boundedFieldLaws
-    , testGroup "Metric" $ testLawOf ([]::[Float]) <$> metricLaws
+    , testGroup "Metric" $ testLawOf ([]::[Float]) <$> metricFloatLaws
     , testGroup "Quotient Field" $ testLawOf ([]::[Float]) <$>
       quotientFieldLaws
     , testGroup "Exponential Ring" $ testLawOf ([]::[Float]) <$> expRingLaws
     , testGroup "Exponential Field" $ testLawOf ([]::[Float]) <$> expFieldLaws
     ]
 
-testsVInt :: Int -> TestTree
-testsVInt n = testGroup "VInt"
-    [ testGroup "Additive" $ testLawOf ([]::[Int]) <$>
+testsVInt :: TestTree
+testsVInt = testGroup "V 6 Int"
+    [ testGroup "Additive" $ testLawOf ([]::[V 6 Int]) <$>
       additiveLaws
-    , testGroup "Additive Group" $ testLawOf ([]::[Int]) <$>
+    , testGroup "Additive Group" $ testLawOf ([]::[V 6 Int]) <$>
       additiveGroupLaws
-    , testGroup "Multiplicative" $ testLawOf ([]::[Int]) <$>
+    , testGroup "Multiplicative" $ testLawOf ([]::[V 6 Int]) <$>
       multiplicativeLaws
-    , testGroup "MultiplicativeGroup" $ testLawOf ([]::[Float]) <$>
-      multiplicativeGroupLaws
-    , testGroup "Distributive" $ testLawOf ([]::[Int])
-      <$> distributiveLaws
-    , testGroup "Integral" $ testLawOf ([]::[Int]) <$>
-      integralLaws
-    , testGroup "Signed" $ testLawOf ([]::[Int]) <$>
-      signedLaws
+    , testGroup "Distributive" $ testLawOf ([]::[V 6 Int])
+      <$> distributionLaws
     ]
 
+testsMInt :: TestTree
+testsMInt = testGroup "M 4 3 Int"
+    [ testGroup "Additive" $ testLawOf ([]::[M 4 3 Int]) <$>
+      additiveLaws
+    , testGroup "Additive Group" $ testLawOf ([]::[M 4 3 Int]) <$>
+      additiveGroupLaws
+    , testGroup "Multiplicative" $ testLawOf ([]::[M 4 3Int]) <$>
+      multiplicativeLaws
+    , testGroup "Distributive" $ testLawOf ([]::[M 4 3 Int])
+      <$> distributionLaws
+    ]
+
+testsVFloat :: TestTree
+testsVFloat = testGroup "V 6 Float"
+    [ testGroup "Additive - Associative - Failure" $ testLawOf ([]::[V 6 Float]) <$>
+      additiveLawsFail
+    , testGroup "Additive Group" $ testLawOf ([]::[V 6 Float]) <$>
+      additiveGroupLaws
+    , testGroup "Multiplicative - Associative Failure" $
+      testLawOf ([]::[V 6 Float]) <$>
+      multiplicativeLawsFail
+    , testGroup "MultiplicativeGroup" $ testLawOf ([]::[V 6 Float]) <$>
+      multiplicativeGroupLaws
+    , testGroup "Distributive - Fail" $ testLawOf ([]::[V 6 Float]) <$>
+      distributionLaws
+    , testGroup "Signed" $ testLawOf ([]::[V 6 Float]) <$>
+      signedLaws
+    , testGroup "Metric" $ testLawOf ([]::[V 6 Float]) <$> metricRepFloatLaws
+    , testGroup "Exponential Ring" $ testLawOf ([]::[V 6 Float]) <$> expRingRepLaws
+    , testGroup "Exponential Field" $ testLawOf ([]::[V 6 Float]) <$> expFieldRepLaws
+    ]
+
+testsMFloat :: TestTree
+testsMFloat = testGroup "M 4 3 Float"
+    [ testGroup "Additive - Associative - Failure" $ testLawOf ([]::[M 4 3 Float]) <$>
+      additiveLawsFail
+    , testGroup "Additive Group" $ testLawOf ([]::[M 4 3 Float]) <$>
+      additiveGroupLaws
+    , testGroup "Multiplicative - Associative Failure" $
+      testLawOf ([]::[M 4 3 Float]) <$>
+      multiplicativeLawsFail
+    , testGroup "MultiplicativeGroup" $ testLawOf ([]::[M 4 3 Float]) <$>
+      multiplicativeGroupLaws
+    , testGroup "Distributive - Fail" $ testLawOf ([]::[M 4 3 Float]) <$>
+      distributionLaws
+    , testGroup "Signed" $ testLawOf ([]::[M 4 3 Float]) <$>
+      signedLaws
+    , testGroup "Metric" $ testLawOf ([]::[M 4 3 Float]) <$> metricRepFloatLaws
+    , testGroup "Exponential Ring" $ testLawOf ([]::[M 4 3 Float]) <$> expRingRepLaws
+    , testGroup "Exponential Field" $ testLawOf ([]::[M 4 3 Float]) <$> expFieldRepLaws
+    ]
 
 additiveLaws ::
     ( Eq a
@@ -112,7 +158,8 @@ additiveLaws =
     ]
 
 additiveLawsApprox ::
-    ( Additive a
+    ( Eq a
+    , Additive a
     , Epsilon a
     ) => [Law a]
 additiveLawsApprox =
@@ -124,7 +171,8 @@ additiveLawsApprox =
     ]
 
 additiveLawsFail ::
-    ( Additive a
+    ( Eq a
+    , Additive a
     , Epsilon a
     , Show a
     , Arbitrary a
@@ -160,7 +208,9 @@ multiplicativeLaws =
     ]
 
 multiplicativeLawsApprox ::
-    ( Epsilon a
+    ( Eq a
+    , Epsilon a
+    , Multiplicative a
     ) => [Law a]
 multiplicativeLawsApprox =
     [ ("associative: (a * b) * c ≈ a * (b * c)"
@@ -172,8 +222,10 @@ multiplicativeLawsApprox =
 
 multiplicativeLawsFail ::
     ( Epsilon a
+    , Eq a
     , Show a
     , Arbitrary a
+    , Multiplicative a
     ) => [Law a]
 multiplicativeLawsFail =
     [ ("associative: (a * b) * c ≈ a * (b * c)"
@@ -185,6 +237,7 @@ multiplicativeLawsFail =
 
 multiplicativeGroupLaws ::
     ( Epsilon a
+    , Eq a
     , MultiplicativeGroup a
     ) => [Law a]
 multiplicativeGroupLaws =
@@ -196,10 +249,12 @@ multiplicativeGroupLaws =
       , Unary (\a -> a == zero || a * recip a ≈ one))
     ]
 
-distributiveLaws ::
+distributionLaws ::
     ( Epsilon a
+    , Eq a
+    , Distribution a
     ) => [Law a]
-distributiveLaws =
+distributionLaws =
     [ ("annihilation: a * zero == zero", Unary (\a -> a `times` zero == zero))
     , ("left distributivity: a * (b + c) ≈ a * b + a * c"
       , Ternary (\a b c -> a `times` (b + c) ≈ a `times` b + a `times` c))
@@ -207,10 +262,12 @@ distributiveLaws =
       , Ternary (\a b c -> (a + b) `times` c ≈ a `times` c + b `times` c))
     ]
 
-distributiveLawsApprox ::
+distributionLawsApprox ::
     ( Epsilon a
+    , Eq a
+    , Distribution a
     ) => [Law a]
-distributiveLawsApprox =
+distributionLawsApprox =
     [ ("annihilation: a * zero == zero", Unary (\a -> a `times` zero == zero))
     , ("left distributivity: a * (b + c) ≈ a * b + a * c"
       , Ternary (\a b c -> a `times` (b + c) ≈ a `times` b + a `times` c))
@@ -222,6 +279,8 @@ distributiveLawsFail ::
     ( Show a
     , Arbitrary a
     , Epsilon a
+    , Eq a
+    , Distribution a
     ) => [Law a]
 distributiveLawsFail =
     [ ("annihilation: a * zero == zero", Unary (\a -> a `times` zero == zero))
@@ -233,8 +292,8 @@ distributiveLawsFail =
     ]
 
 signedLaws ::
-    ( Epsilon a
-    , Normed a a
+    ( Eq a
+    , Signed a
     ) => [Law a]
 signedLaws =
     [ ("sign a * abs a == a", Unary (\a -> sign a `times` abs a == a))
@@ -268,13 +327,38 @@ boundedFieldLaws =
                   (zero :: Float)/zero /= nan))
     ]
 
-metricLaws ::
-    ( Metric a Float
-    , Fractional a
-    , Signed a
-    , Normed a a
-    ) => [Law a]
-metricLaws =
+prettyPositive :: (Epsilon a, Ord a) => a -> Bool
+prettyPositive a = not (nearZero a) && a > zero
+
+kindaPositive :: (Epsilon a, Ord a) => a -> Bool
+kindaPositive a = nearZero a || a > zero
+
+metricRepFloatLaws ::
+    ( Representable r
+    , Foldable r
+    ) => [Law (r Float)]
+metricRepFloatLaws =
+    [ ( "positive"
+      , Binary (\a b -> distance a b >= (zero::Float)))
+    , ("zero if equal"
+      , Unary (\a -> distance a a == (zero::Float)))
+    , ( "associative"
+      , Binary (\a b -> distance a b ≈ (distance b a :: Float)))
+    , ( "triangle rule - sum of distances > distance"
+      , Ternary
+        (\a b c ->
+            kindaPositive
+            (distance a c + distance b c - (distance a b :: Float)) &&
+            kindaPositive
+            (distance a b + distance b c - (distance a c :: Float)) &&
+            kindaPositive
+            (distance a b + distance a c - (distance b c :: Float))))
+    ]
+
+metricFloatLaws ::
+    ( 
+    ) => [Law Float]
+metricFloatLaws =
     [ ( "positive"
       , Binary (\a b -> (distance a b :: Float) >= zero))
     , ("zero if equal"
@@ -312,6 +396,7 @@ quotientFieldLaws =
 expRingLaws ::
     ( ExpRing a
     , Epsilon a
+    , Ord a
     ) => [Law a]
 expRingLaws =
     [ ("for +ive b, a != 0,1: a ** logBase a b ≈ b"
@@ -323,10 +408,29 @@ expRingLaws =
                     (a ** logBase a b ≈ b))))
     ]
 
+expRingRepLaws ::
+    ( Representable r
+    , Foldable r
+    , ExpRing a
+    , Epsilon a
+    , Ord a
+    ) => [Law (r a)]
+expRingRepLaws =
+    [ ("for +ive b, a != 0,1: a ** logBase a b ≈ b"
+      , Binary (\a b ->
+                  ( not (all prettyPositive b) ||
+                    not (all nearZero a) ||
+                    all (==one) a ||
+                    (all (==zero) a && all nearZero (logBase a b)) ||
+                    (a ** logBase a b ≈ b))))
+    ]
+
+
 expFieldLaws ::
     ( ExpField a
     , Epsilon a
     , Fractional a
+    , Ord a
     ) => [Law a]
 expFieldLaws =
     [ ("sqrt . (**2) ≈ id"
@@ -338,6 +442,26 @@ expFieldLaws =
                     (log . exp $ a) ≈ a &&
                     (exp . log $ a) ≈ a))
     ]
+
+expFieldRepLaws ::
+    ( Representable r
+    , Foldable r
+    , ExpField a
+    , Epsilon a
+    , Fractional a
+    , Ord a
+    ) => [Law (r a)]
+expFieldRepLaws =
+    [ ("sqrt . (**2) ≈ id"
+      , Unary (\a -> not (all prettyPositive a) || any (>10.0) a ||
+                    (sqrt . (**(one+one)) $ a) ≈ a &&
+                    ((**(one+one)) . sqrt $ a) ≈ a))
+    , ("log . exp ≈ id"
+      , Unary (\a -> not (all prettyPositive a) || any (>10.0) a ||
+                    (log . exp $ a) ≈ a &&
+                    (exp . log $ a) ≈ a))
+    ]
+
 
 todoLaws ::
     ( -- Eq a

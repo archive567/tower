@@ -61,7 +61,6 @@ module Tower.Algebra (
   , Bounded(..)
   , Metric(..)
   , Normed(..)
-  , abs
   , Signed(..)
   , Epsilon(..)
   , (≈)
@@ -90,7 +89,7 @@ module Tower.Algebra (
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int, Integer, Functor(..), ($), (.), (<$>), Foldable(..), fst, snd, foldr, const, Bool(..), Ord(..), Eq(..), not, (&&), (||), any)
+import Protolude (Double, Float, Int, Integer, Functor(..), ($), (.), (<$>), Foldable(..), fst, snd, foldr, const, Bool(..), Ord(..), Eq(..), any)
 import Data.Functor.Rep
 import Data.Distributive
 
@@ -608,6 +607,29 @@ instance (Field a, Representable r) => Bounded (r a) where
     maxBound = one/zero
     minBound = negate (one/zero)
 
+class ( AdditiveUnital a
+      , AdditiveGroup a
+      , Multiplicative a
+      ) => Signed a where
+    sign :: a -> a
+    abs :: a -> a
+
+instance Signed Double where
+    sign a = if a >= zero then one else negate one
+    abs = P.abs
+instance Signed Float where
+    sign a = if a >= zero then one else negate one
+    abs = P.abs
+instance Signed Int where
+    sign a = if a >= zero then one else negate one
+    abs = P.abs
+instance Signed Integer where
+    sign a = if a >= zero then one else negate one
+    abs = P.abs
+instance (Representable r, Signed a) => Signed (r a) where
+    sign = fmapRep sign
+    abs = fmapRep abs
+
 -- | Normed
 class Normed a b where
     size :: a -> b
@@ -620,48 +642,35 @@ instance (Foldable r, Representable r, ExpField a, ExpRing a) =>
     Normed (r a) a where
     size r = sqrt $ foldr (+) zero $ (**(one+one)) <$> r
 
-abs :: (Normed a a) => a -> a
-abs = size
-
-instance (Normed a a, Representable r) => Normed (r a) (r a) where
-    size = fmapRep abs
-
-class ( Ord a
-      , AdditiveUnital a
-      , AdditiveGroup a
-      , Multiplicative a
-      ) => Signed a where
-    sign :: a -> a
-    sign a = if a >= zero then one else negate one
-
-instance Signed Double
-instance Signed Float
-instance Signed Int
-instance Signed Integer
-
 -- | Epsilon
-class (AdditiveGroup a, Ord a, Signed a) => Epsilon a where
+class (AdditiveGroup a) => Epsilon a where
     nearZero :: a -> Bool
-    nearZero a = a == zero
-
     aboutEqual :: a -> a -> Bool
-    aboutEqual a b = nearZero $ a - b
-
-    prettyPositive :: a -> Bool
-    prettyPositive a = not (nearZero a) && a > zero
-
-    kindaPositive :: a -> Bool
-    kindaPositive a = nearZero a || a > zero
 
 infixl 4 ≈
 
 (≈) :: (Epsilon a) => a -> a -> Bool
 (≈) = aboutEqual
 
-instance Epsilon Double where nearZero a = abs a <= (1e-12 :: Double)
-instance Epsilon Float where nearZero a = abs a <= (1e-6 :: Float)
-instance Epsilon Int
-instance Epsilon Integer
+instance Epsilon Double where
+    nearZero a = abs a <= (1e-12 :: Double)
+    aboutEqual a b = nearZero $ a - b
+
+instance Epsilon Float where
+    nearZero a = abs a <= (1e-6 :: Float)
+    aboutEqual a b = nearZero $ a - b
+
+instance Epsilon Int where
+    nearZero a = a == zero
+    aboutEqual a b = nearZero $ a - b
+
+instance Epsilon Integer where
+    nearZero a = a == zero
+    aboutEqual a b = nearZero $ a - b
+
+instance (Foldable r, Representable r, Epsilon a) => Epsilon (r a) where
+    nearZero a = any nearZero $ toList a
+    aboutEqual a b = any P.identity $ liftR2 aboutEqual a b
 
 -- | Metric
 class Metric a b where
