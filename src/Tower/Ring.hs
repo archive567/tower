@@ -44,7 +44,6 @@ instance Ring Double
 instance Ring Float
 instance Ring Int
 instance Ring Integer
-instance Ring Bool
 instance (Representable r, Ring a) => Ring (r a)
 
 -- | CRing is a Commutative Ring.  It arises often due to * being defined as only multiplicative commutative, yet fromInteger being a `Integer -> Ring` (and thus not necessarily commutative).
@@ -54,6 +53,5 @@ instance CRing Double
 instance CRing Float
 instance CRing Int
 instance CRing Integer
-instance CRing Bool
 instance (Representable r, CRing a) => CRing (r a)
 

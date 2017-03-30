@@ -19,7 +19,6 @@ import Tower.Multiplicative
 import Tower.Additive
 
 -- * Additive Module Structure
-
 -- | AdditiveBasis
 -- element by element addition
 class ( Representable m
@@ -28,6 +27,8 @@ class ( Representable m
     infixl 7 .+.
     (.+.) :: m a -> m a -> m a
     (.+.) = liftR2 (+)
+
+instance (Representable r, Additive a) => AdditiveBasis r a
 
 -- | AdditiveGroupBasis
 -- element by element subtraction

@@ -20,8 +20,7 @@ module Tower.Ordering (
   ) where
 
 import qualified Protolude as P
-import Protolude (Double, Float, Int, Integer, Functor(..), ($), (.), (<$>), Foldable(..), fst, snd, foldr, const, Bool(..), Ord(..), Eq(..), any)
-import Data.Functor.Rep
+import Protolude (Double, Float, Int, Integer, Bool(..), Ord(..), Eq(..), fst)
 import Data.Coerce
 import Tower.Magma
 

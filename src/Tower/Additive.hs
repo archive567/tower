@@ -185,5 +185,4 @@ instance AdditiveGroup Double
 instance AdditiveGroup Float
 instance AdditiveGroup Int
 instance AdditiveGroup Integer
-instance AdditiveGroup Bool
 instance (Representable r, AdditiveGroup a) => AdditiveGroup (r a)

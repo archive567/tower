@@ -7,8 +7,6 @@ synopsis:
 description:
   A heirarchy of classes for numbers and algebras that combine them: a numeric tower.
   .
-  Performance testing, notes and examples can be found in <https://github.com/tonyday567/tower-dev tower-dev>.
-  .
   The tower looks something like:
   .
   <<https://tonyday567.github.io/other/field-tower.svg>>
@@ -69,12 +67,8 @@ library
     protolude,
     vector,
     QuickCheck,
-    lens,
     adjunctions,
     distributive,
-    linear,
-    algebra,
-    singletons,
     constraints
   default-extensions:
     NoImplicitPrelude,
@@ -122,19 +116,13 @@ test-suite test
     test.hs
   build-depends:
     base >= 4.7 && < 5,
-    protolude,
+    tower,
     tasty,
     HUnit,
     tasty-hunit,
-    smallcheck,
-    tasty-smallcheck,
     QuickCheck,
     tasty-quickcheck,
-    tower,
-    lens,
-    doctest,
-    linear,
-    singletons >= 2.2
+    doctest
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
