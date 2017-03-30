@@ -43,12 +43,27 @@ library
   hs-source-dirs:
     src
   exposed-modules:
-    Tower.Algebra,
-    Tower.Algebra.Num,
     Tower.Prelude,
     Tower.Examples,
+    Tower.Algebra,
+    Tower.Additive,
+    Tower.Basis,
+    Tower.Exponential,
+    Tower.Distribution,
+    Tower.Ring,
+    Tower.Field,
+    Tower.Integral,
+    Tower.Magma,
+    Tower.Metric,
+    Tower.Module,
+    Tower.Multiplicative
+    Tower.Ordering,
     Tower.V,
-    Tower.M
+    Tower.M,
+    Tower.Bool,
+    Tower.Category,
+    Tower.Finite,
+    Tower.Num
   build-depends:
     base >= 4.7 && < 5,
     protolude,
@@ -59,7 +74,8 @@ library
     distributive,
     linear,
     algebra,
-    singletons
+    singletons,
+    constraints
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,

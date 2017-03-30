@@ -14,14 +14,18 @@ module Tower.M where
 import qualified Protolude as P
 import Protolude
     (($), Functor(..), Show, Eq(..), (.), (<$>))
-import Tower.Algebra as T
 import GHC.TypeLits
 import qualified Data.Vector as V
 import Data.Proxy (Proxy(..))
 import Data.Functor.Rep
 import Data.Distributive as D
 import Tower.V
+import Tower.Additive
 import Test.QuickCheck
+import Tower.Multiplicative
+import Tower.Integral
+import Tower.Module
+import Tower.Ring
 
 newtype M m n a = M { flattenM :: V.Vector a }
     deriving (Functor, Show, Eq, P.Foldable)
@@ -29,8 +33,11 @@ newtype M m n a = M { flattenM :: V.Vector a }
 instance (KnownNat m, KnownNat n, Arbitrary a, AdditiveUnital a) => Arbitrary (M m n a) where
     arbitrary = frequency
         [ (1, P.pure zero)
-        , (9, toM <$> arbitrary)
+        , (9, toM <$> vector (m*n))
         ]
+      where
+        n = P.fromInteger $ natVal (Proxy :: Proxy n)
+        m = P.fromInteger $ natVal (Proxy :: Proxy m)
 
 instance (KnownNat m, KnownNat n) => Distributive (M m n) where
     distribute f = M $ V.generate (n*m)

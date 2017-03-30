@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# OPTIONS_GHC -Wall #-}
 
@@ -6,7 +7,7 @@ module Main where
 
 import Tower.Prelude
 
-import Test.Tasty (TestName, TestTree, testGroup, defaultMain)
+import Test.Tasty (TestName, TestTree, testGroup, defaultMain, localOption)
 import Test.Tasty.QuickCheck
 import Test.DocTest
 -- import Test.QuickCheck
@@ -69,7 +70,7 @@ testsFloat = testGroup "Float"
     , testGroup "MultiplicativeGroup" $ testLawOf ([]::[Float]) <$>
       multiplicativeGroupLaws
     , testGroup "Distributive - Fail" $ testLawOf ([]::[Float]) <$>
-      distributiveLawsFail
+      distributionLawsFail
     , testGroup "Signed" $ testLawOf ([]::[Float]) <$>
       signedLaws
     , testGroup "Bounded Field" $ testLawOf ([]::[Float]) <$>
@@ -107,17 +108,19 @@ testsMInt = testGroup "M 4 3 Int"
 
 testsVFloat :: TestTree
 testsVFloat = testGroup "V 6 Float"
-    [ testGroup "Additive - Associative - Failure" $ testLawOf ([]::[V 6 Float]) <$>
+    [ testGroup "Additive - Associative" $
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[V 6 Float]) <$>
       additiveLawsFail
     , testGroup "Additive Group" $ testLawOf ([]::[V 6 Float]) <$>
       additiveGroupLaws
-    , testGroup "Multiplicative - Associative Failure" $
-      testLawOf ([]::[V 6 Float]) <$>
+    , testGroup "Multiplicative - Associative" $
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[V 6 Float]) <$>
       multiplicativeLawsFail
     , testGroup "MultiplicativeGroup" $ testLawOf ([]::[V 6 Float]) <$>
       multiplicativeGroupLaws
-    , testGroup "Distributive - Fail" $ testLawOf ([]::[V 6 Float]) <$>
-      distributionLaws
+    , testGroup "Distributive" $
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[V 6 Float]) <$>
+      distributionLawsFail
     , testGroup "Signed" $ testLawOf ([]::[V 6 Float]) <$>
       signedLaws
     , testGroup "Metric" $ testLawOf ([]::[V 6 Float]) <$> metricRepFloatLaws
@@ -127,17 +130,19 @@ testsVFloat = testGroup "V 6 Float"
 
 testsMFloat :: TestTree
 testsMFloat = testGroup "M 4 3 Float"
-    [ testGroup "Additive - Associative - Failure" $ testLawOf ([]::[M 4 3 Float]) <$>
+    [ testGroup "Additive - Associative - Failure" $
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[M 4 3 Float]) <$>
       additiveLawsFail
     , testGroup "Additive Group" $ testLawOf ([]::[M 4 3 Float]) <$>
       additiveGroupLaws
     , testGroup "Multiplicative - Associative Failure" $
-      testLawOf ([]::[M 4 3 Float]) <$>
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[M 4 3 Float]) <$>
       multiplicativeLawsFail
     , testGroup "MultiplicativeGroup" $ testLawOf ([]::[M 4 3 Float]) <$>
       multiplicativeGroupLaws
-    , testGroup "Distributive - Fail" $ testLawOf ([]::[M 4 3 Float]) <$>
-      distributionLaws
+    , testGroup "Distributive - Fail" $
+      localOption (QuickCheckTests 1000) . testLawOf ([]::[M 4 3 Float]) <$>
+      distributionLawsFail
     , testGroup "Signed" $ testLawOf ([]::[M 4 3 Float]) <$>
       signedLaws
     , testGroup "Metric" $ testLawOf ([]::[M 4 3 Float]) <$> metricRepFloatLaws
@@ -173,13 +178,12 @@ additiveLawsApprox =
 additiveLawsFail ::
     ( Eq a
     , Additive a
-    , Epsilon a
     , Show a
     , Arbitrary a
     ) => [Law a]
 additiveLawsFail =
-    [ ( "associative: (a + b) + c ≈ a + (b + c)"
-      , Failiary $ expectFailure . (\a b c -> (a + b) + c ≈ a + (b + c)))
+    [ ( "associative: (a + b) + c = a + (b + c)"
+      , Failiary $ expectFailure . (\a b c -> (a + b) + c == a + (b + c)))
     , ("left id: zero + a = a", Unary (\a -> zero + a == a))
     , ("right id: a + zero = a", Unary (\a -> a + zero == a))
     , ("commutative: a + b == b + a", Binary (\a b -> a + b == b + a))
@@ -221,15 +225,14 @@ multiplicativeLawsApprox =
     ]
 
 multiplicativeLawsFail ::
-    ( Epsilon a
-    , Eq a
+    ( Eq a
     , Show a
     , Arbitrary a
     , Multiplicative a
     ) => [Law a]
 multiplicativeLawsFail =
-    [ ("associative: (a * b) * c ≈ a * (b * c)"
-      , Failiary $ expectFailure . (\a b c -> (a * b) * c ≈ a * (b * c)))
+    [ ("associative: (a * b) * c = a * (b * c)"
+      , Failiary $ expectFailure . (\a b c -> (a * b) * c == a * (b * c)))
     , ("left id: one * a = a", Unary (\a -> one * a == a))
     , ("right id: a * one = a", Unary (\a -> a * one == a))
     , ("commutative: a * b == b * a", Binary (\a b -> a * b == b * a))
@@ -275,20 +278,20 @@ distributionLawsApprox =
       , Ternary (\a b c -> (a + b) `times` c ≈ a `times` c + b `times` c))
     ]
 
-distributiveLawsFail ::
+distributionLawsFail ::
     ( Show a
     , Arbitrary a
     , Epsilon a
     , Eq a
     , Distribution a
     ) => [Law a]
-distributiveLawsFail =
+distributionLawsFail =
     [ ("annihilation: a * zero == zero", Unary (\a -> a `times` zero == zero))
-    , ("left distributivity: a * (b + c) ≈ a * b + a * c"
+    , ("left distributivity: a * (b + c) = a * b + a * c"
     , Failiary $ expectFailure .
-      (\a b c -> a `times` (b + c) ≈ a `times` b + a `times` c))
-    , ("right distributivity: (a + b) * c ≈ a * c + b * c"
-    , Failiary $ expectFailure . (\a b c -> (a + b) `times` c ≈ a `times` c + b `times` c))
+      (\a b c -> a `times` (b + c) == a `times` b + a `times` c))
+    , ("right distributivity: (a + b) * c = a * c + b * c"
+    , Failiary $ expectFailure . (\a b c -> (a + b) `times` c == a `times` c + b `times` c))
     ]
 
 signedLaws ::
@@ -461,7 +464,6 @@ expFieldRepLaws =
                     (log . exp $ a) ≈ a &&
                     (exp . log $ a) ≈ a))
     ]
-
 
 todoLaws ::
     ( -- Eq a

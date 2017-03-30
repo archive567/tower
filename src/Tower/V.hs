@@ -4,7 +4,7 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -Wall #-}
 
--- | A tower based on Representable
+-- | A vector based on Representable
 
 module Tower.V where
 
@@ -16,10 +16,10 @@ import Data.Distributive as D
 import Data.Functor.Rep
 import Data.Proxy (Proxy(..))
 import GHC.TypeLits
-import Tower.Algebra
 import qualified Data.List as List
 import qualified Data.Vector as V
 import Test.QuickCheck
+import Tower.Additive
 
 newtype V n a = V { toVector :: V.Vector a }
     deriving (Functor, Show, Eq, P.Foldable, P.Ord)
@@ -27,8 +27,10 @@ newtype V n a = V { toVector :: V.Vector a }
 instance (KnownNat n, Arbitrary a, AdditiveUnital a) => Arbitrary (V n a) where
     arbitrary = frequency
         [ (1, P.pure zero)
-        , (9, toV <$> arbitrary)
+        , (9, toV <$> vector n)
         ]
+      where
+        n = P.fromInteger $ natVal (Proxy :: Proxy n)
 
 instance KnownNat n => D.Distributive (V n) where
     distribute f = V $ V.generate n $ \i -> fmap (\(V v) -> V.unsafeIndex v i) f
