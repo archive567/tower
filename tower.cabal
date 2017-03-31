@@ -61,7 +61,8 @@ library
     Tower.Bool,
     Tower.Category,
     Tower.Finite,
-    Tower.Num
+    Tower.Num,
+    Tower.N
   build-depends:
     base >= 4.7 && < 5,
     protolude,
@@ -69,7 +70,8 @@ library
     QuickCheck,
     adjunctions,
     distributive,
-    constraints
+    constraints,
+    singletons >= 2.2
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,

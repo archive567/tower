@@ -6,6 +6,7 @@
 module Main where
 
 import Tower.Prelude
+import Tower.N
 
 import Test.Tasty (TestName, TestTree, testGroup, defaultMain, localOption)
 import Test.Tasty.QuickCheck
@@ -62,6 +63,7 @@ tests =
     , testsVFloat
     , testsMInt
     , testsMFloat
+    , testsNInt
     ]
 
 testsInt :: TestTree
@@ -163,6 +165,31 @@ testsMInt = testGroup "M 4 3 Int"
     , testGroup "Multiplicative Basis" $ testLawOf ([]::[M 4 3 Int]) <$>
       multiplicativeBasisLaws
     ]
+
+testsNInt :: TestTree
+testsNInt = testGroup "N [2,3,2] Int"
+    [ testGroup "Additive" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      additiveLaws
+    , testGroup "Additive Group" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      additiveGroupLaws
+    , testGroup "Multiplicative" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      multiplicativeLaws
+    , testGroup "Distribution" $ testLawOf ([]::[N [2,3,2] Int])
+      <$> distributionLaws
+    , testGroup "Additive Module" $ testLawOf2 ([]::[(N [2,3,2] Int, Int)]) <$>
+      additiveModuleLaws
+    , testGroup "Additive Group Module" $ testLawOf2 ([]::[(N [2,3,2] Int, Int)]) <$>
+      additiveGroupModuleLaws
+    , testGroup "Multiplicative Module" $ testLawOf2 ([]::[(N [2,3,2] Int, Int)]) <$>
+      multiplicativeModuleLaws
+    , testGroup "Additive Basis" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      additiveBasisLaws
+    , testGroup "Additive Group Basis" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      additiveGroupBasisLaws
+    , testGroup "Multiplicative Basis" $ testLawOf ([]::[N [2,3,2] Int]) <$>
+      multiplicativeBasisLaws
+    ]
+
 
 testsVFloat :: TestTree
 testsVFloat = testGroup "V 6 Float"
