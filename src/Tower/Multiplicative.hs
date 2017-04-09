@@ -24,6 +24,7 @@ module Tower.Multiplicative (
 import qualified Protolude as P
 import Protolude (Double, Float, Int, Integer, Bool(..))
 import Data.Functor.Rep
+import Data.Complex (Complex(..))
 
 -- * Multiplicative structure
 -- | 'times' is used for the multiplicative magma to distinguish from '*' which, by convention, implies commutativity
@@ -34,6 +35,9 @@ instance MultiplicativeMagma Float where times = (P.*)
 instance MultiplicativeMagma Int where times = (P.*)
 instance MultiplicativeMagma Integer where times = (P.*)
 instance MultiplicativeMagma Bool where times = (P.&&)
+instance {-# OVERLAPPING #-} (MultiplicativeMagma a, AdditiveGroup a) =>
+         MultiplicativeMagma (Complex a) where
+  (rx :+ ix) `times` (ry :+ iy) = (rx `times` ry - ix `times` iy) :+ (ix `times` ry + iy `times` rx)
 instance (Representable r, MultiplicativeMagma a) => MultiplicativeMagma (r a) where
     times = liftR2 times
 
@@ -48,6 +52,9 @@ instance MultiplicativeUnital Float where one = 1
 instance MultiplicativeUnital Int where one = 1
 instance MultiplicativeUnital Integer where one = 1
 instance MultiplicativeUnital Bool where one = True
+instance {-# OVERLAPPING #-} (AdditiveUnital a, AdditiveGroup a, MultiplicativeUnital a) =>
+         MultiplicativeUnital (Complex a) where
+  one = one :+ zero
 instance (Representable r, MultiplicativeUnital a) =>
     MultiplicativeUnital (r a) where
     one = pureRep one
@@ -144,6 +151,13 @@ instance Multiplicative Float
 instance Multiplicative Int
 instance Multiplicative Integer
 instance Multiplicative Bool
+instance {-# OVERLAPPING #-} ( MultiplicativeCommutative a
+         , MultiplicativeUnital a
+         , MultiplicativeAssociative a
+         , AdditiveGroup a
+         ) =>
+         Multiplicative (Complex a) where
+  (*) = times
 instance (Representable r, Multiplicative a) => Multiplicative (r a)
 
 class ( MultiplicativeUnital a
